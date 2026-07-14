@@ -1,6 +1,6 @@
-<h1 align="center">FREE Addon WHMCS WhatsApp Notifications for Meta, Evolution API, Baileys</h1>
+# 🚀 WHMCS WhatsApp Notifications Module (Meta Cloud API, Evolution, Baileys) - Now 100% FREE and Open Source!
 
-<p align="center">Free Addon for WhatsApp <a href="https://www.linknacional.com.br/whmcs/">WHMCS</a> Notification Module for Meta, Evolution API and Baileys. Send Free WhatsApp Message Automatic by Hook, Manual or Custom.</p>
+Free Addon for [WHMCS WhatsApp Notifications](https://www.linknacional.com.br/whmcs/whatsapp/) Module for Meta, Evolution API and Baileys. Send Free WhatsApp Message Automatic by Hook, Manual or Custom.
 
 ![Static Badge](https://img.shields.io/badge/version-v4.3.3-blue)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
