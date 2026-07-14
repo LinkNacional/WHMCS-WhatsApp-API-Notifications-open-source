@@ -1,3 +1,6 @@
+# 4.4.0 - 14/07/26
+- Correção e definição de licença GPL
+
 # 4.3.5 - 27/08/25
 
 - Correção na busca de clientes pela id do orçamento.

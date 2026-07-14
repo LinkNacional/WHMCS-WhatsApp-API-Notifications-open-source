@@ -1,4 +1,7 @@
 {
+    "name": "linknacional/lknhooknotification",
+    "description": "Notifications for WHMCS by many message providers.",
+    "license": "GPL-3.0",
     "require": {
         "phan/phan": "^5.4"
     },
