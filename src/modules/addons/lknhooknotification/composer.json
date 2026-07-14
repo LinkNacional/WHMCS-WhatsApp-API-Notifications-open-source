@@ -1,8 +1,8 @@
 {
     "name": "linknacional/hooknotification",
     "type": "project",
-    "license": "proprietary",
-    "description": "Notificações",
+    "license": "GPL-3.0",
+    "description": "Notifications for WHMCS by many message providers.",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {

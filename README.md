@@ -10,7 +10,7 @@ Free Addon for [WHMCS WhatsApp Notifications](https://www.linknacional.com.br/wh
 
 ## ✅ Requirements
 
-- PHP: 8.1+;
+- PHP: 8.2+;
 - WHMCS: 8.6+
 - Data Base SQL with permissions
   - ALTER

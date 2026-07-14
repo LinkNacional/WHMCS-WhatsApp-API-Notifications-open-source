@@ -2,7 +2,7 @@
     "schema": "1.0",
     "type": "whmcs-addons",
     "name": "lknhooknotification",
-    "license": "proprietary",
+    "license": "GPL-3.0",
     "category": "utilities",
     "description": {
         "name": "Notificações via WhatsApp API",

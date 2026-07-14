@@ -10,7 +10,7 @@ use WHMCS\User\Client;
 
 final class LiveChatService
 {
-    private readonly Client $signedInClient;
+    private readonly Client $asignedInClient;
     private readonly View $view;
     private readonly LiveChatSettings $liveChatSettings;
 
@@ -246,18 +246,9 @@ final class LiveChatService
         int $clientId,
         string $userIdentifyValidation
     ): array {
-        $clientIdentifierKey = hash_hmac(
-            'sha256',
-            (string) $clientId,
-            $userIdentifyValidation
-        );
+        $identifier      = (string) $clientId;                                        // identificador estável
+        $identifierHash  = hash_hmac('sha256', $identifier, $userIdentifyValidation); // assinatura
 
-        $identifierHash = hash_hmac(
-            'sha256',
-            $clientIdentifierKey,
-            $userIdentifyValidation
-        );
-
-        return [$clientIdentifierKey, $identifierHash];
+        return [$identifier, $identifierHash];
     }
 }
