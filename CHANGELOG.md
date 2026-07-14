@@ -1,5 +1,8 @@
-# 4.4.0 - 14/07/26
+# 4.5.0 - 14/07/26
 - Correção e definição de licença GPL
+
+# 4.4.0 - 14/07/26
+- Release v4.4.0 Refactor client handling and improve notification
 
 # 4.3.5 - 27/08/25
 
