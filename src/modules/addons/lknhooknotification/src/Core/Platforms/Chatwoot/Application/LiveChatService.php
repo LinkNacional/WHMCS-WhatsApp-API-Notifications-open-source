@@ -10,7 +10,7 @@ use WHMCS\User\Client;
 
 final class LiveChatService
 {
-    private readonly Client $asignedInClient;
+    private readonly Client $signedInClient;
     private readonly View $view;
     private readonly LiveChatSettings $liveChatSettings;
 
