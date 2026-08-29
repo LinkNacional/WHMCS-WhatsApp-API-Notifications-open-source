@@ -5,6 +5,7 @@ use Lkn\HookNotification\Core\WHMCS\ApiHandler;
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../../../../init.php';
 require_once __DIR__ . '/../Core/Shared/param_funcs.php';
+require_once __DIR__ . '/Shared/Infrastructure/helpers.php';
 
 try {
     // Fase 1 (hardening): accept POST only.
@@ -57,4 +58,13 @@ try {
     }
 } catch (Throwable $th) {
     lkn_hn_log('API error', ['exception' => $th->__toString()]);
+
+    // Never return an empty body: surface a JSON error so the client can handle it
+    // and the real exception message is visible for diagnosis.
+    http_response_code(500);
+    Header('Content-Type: application/json');
+    echo json_encode([
+        'error' => 'internal_error',
+        'debug' => $th->getMessage(),
+    ]);
 }
