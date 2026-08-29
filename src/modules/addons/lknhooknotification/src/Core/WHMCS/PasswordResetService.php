@@ -6,6 +6,7 @@ use DateTime;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReportStatus;
 use Lkn\HookNotification\Core\Notification\Application\NotificationFactory;
 use Lkn\HookNotification\Core\Notification\Application\Services\NotificationSender;
+use Lkn\HookNotification\Core\Notification\Application\Services\NotificationService;
 use Lkn\HookNotification\Core\Platforms\Common\PlatformNotificationSendResult;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Result;
 use WHMCS\Database\Capsule;
@@ -17,11 +18,13 @@ final class PasswordResetService
 {
     private readonly NotificationFactory $notificationFactory;
     private readonly NotificationSender $notificationSender;
+    private readonly NotificationService $notificationService;
 
     public function __construct()
     {
         $this->notificationFactory = NotificationFactory::getInstance();
         $this->notificationSender  = NotificationSender::getInstance();
+        $this->notificationService = new NotificationService();
     }
 
     /**
@@ -31,6 +34,12 @@ final class PasswordResetService
      */
     public function run(string $email): array
     {
+        // Fase 2 (hardening): respect the admin toggle for the SafePasswordReset
+        // notification. If disabled, do not send anything (email or WhatsApp).
+        if (!$this->notificationService->isNotificationEnabled('SafePasswordReset')) {
+            return $this->neutralResponse();
+        }
+
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
 
         if (!$email) {
@@ -173,8 +182,9 @@ final class PasswordResetService
      */
     private function notifyClient(object $client): array
     {
-        $output = localAPI('ResetPassword', ['email' => $client->email]);
-
+        // Fase 2 (hardening): do NOT reset the password token unconditionally here.
+        // Only regenerate it below if the owner user token is missing/expired
+        // (parity with notifyUser), so a still-valid link is not invalidated.
         /** @var null|int $clientUserOwnerId */
         $clientUserOwnerId = Capsule::table('tblusers_clients')
             ->where('client_id', $client->id)
