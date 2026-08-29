@@ -1,7 +1,7 @@
 window.document.addEventListener('DOMContentLoaded', () => {
     const scriptTag = document.querySelector('script[src$="safe_password_reset.js"]');
     const translations = JSON.parse(scriptTag.dataset.translations);
-    const csrfToken = scriptTag.dataset.csrfToken || '';
+    const injectedToken = scriptTag.dataset.csrfToken || '';
 
     function translate(key) {
         return translations[key] || key
@@ -23,6 +23,12 @@ window.document.addEventListener('DOMContentLoaded', () => {
         submitPasswordResetBtn.disabled = true
 
         const email = passwordResetEmailInput.value
+
+        // Fase 1 (hardening): use o token CSRF que o WHMCS renderizou no formulário
+        // (o valor injetado via data-csrf-token pode estar obsoleto, pois o WHMCS
+        // regenera o token ao renderizar a página).
+        const tokenInput = passwordResetForm.querySelector('input[name="token"], input[name="csrftoken"]')
+        const csrfToken = (tokenInput && tokenInput.value) || injectedToken
 
         const res = await fetch(`/modules/addons/lknhooknotification/src/Core/api.php?endpoint=password/reset?email=${encodeURIComponent(email)}`, {
             method: 'POST',
