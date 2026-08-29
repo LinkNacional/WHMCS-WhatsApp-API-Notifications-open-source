@@ -134,20 +134,11 @@ final class PasswordResetService
      */
     private function notifyUser(object $user): array
     {
-        $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
+        // Reusa o token se ainda válido; senão gera um novo (o módulo controla o token).
+        $this->ensureResetToken($user);
 
-        $emailSent = false;
-
-        if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            // Token expirado/ausente: localAPI gera o token E envia o email nativo.
-            /** @var array<string, mixed> $output */
-            $output    = localAPI('ResetPassword', ['email' => $user->email]);
-            $emailSent = is_array($output) && ($output['result'] ?? '') === 'success';
-        } else {
-            // Token válido: envia o email com a URL atual (não invalida o link).
-            $resetUrl  = get_passsword_reset_url_for_user($user->email);
-            $emailSent = $this->sendEmail($user->id, $resetUrl);
-        }
+        $resetUrl  = get_passsword_reset_url_for_user($user->email);
+        $emailSent = $this->sendEmail($user->id, $resetUrl);
 
         /** @var array{sent_to_email: string, sent_to_phone?: string} $result */
         $result = [];
@@ -213,21 +204,11 @@ final class PasswordResetService
             return [];
         }
 
-        $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
+        // Reusa o token se ainda válido; senão gera um novo (o módulo controla o token).
+        $this->ensureResetToken($user);
 
-        $emailSent = false;
-
-        if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            // Token expirado/ausente: localAPI gera o token E envia o email nativo
-            // (para o usuário proprietário).
-            /** @var array<string, mixed> $output */
-            $output    = localAPI('ResetPassword', ['email' => $user->email]);
-            $emailSent = is_array($output) && ($output['result'] ?? '') === 'success';
-        } else {
-            // Token válido: envia o email com a URL atual (não invalida o link).
-            $resetUrl  = get_passsword_reset_url_for_user($user->email);
-            $emailSent = $this->sendEmail($client->id, $resetUrl);
-        }
+        $resetUrl  = get_passsword_reset_url_for_user($user->email);
+        $emailSent = $this->sendEmail($client->id, $resetUrl);
 
         /** @var array{sent_to_email: string, sent_to_phone: string} $result */
         $result = [];
@@ -252,6 +233,28 @@ final class PasswordResetService
         }
 
         return $result;
+    }
+
+    /**
+     * Gera um novo token de reset apenas se o atual estiver ausente/expirado,
+     * reaproveitando links ainda válidos (evita loop de reset). O módulo controla
+     * a geração do token — não delega ao WHMCS/localAPI.
+     *
+     * @param object{id: int, reset_token_expiry: string} $user
+     */
+    private function ensureResetToken(object $user): void
+    {
+        $expiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
+
+        if ($expiry && $expiry >= new DateTime()) {
+            // Token ainda válido: reaproveita.
+            return;
+        }
+
+        Capsule::table('tblusers')->where('id', $user->id)->update([
+            'reset_token'        => bin2hex(random_bytes(32)),
+            'reset_token_expiry' => (new DateTime())->modify('+2 hours')->format('Y-m-d H:i:s'),
+        ]);
     }
 
     private function sendWhatsAppNotification(
