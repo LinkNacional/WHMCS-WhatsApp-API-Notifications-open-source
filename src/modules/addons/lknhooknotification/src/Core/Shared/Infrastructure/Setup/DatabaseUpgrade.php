@@ -519,4 +519,38 @@ final class DatabaseUpgrade
             lkn_hn_log('Database 4.3.0 upgrade failed', null, $th->__toString());
         }
     }
+
+    // Fase 1 (hardening): dedicated table for per-IP rate limiting of the
+    // password reset endpoint. Idempotent (IF NOT EXISTS), no destructive migration.
+    public static function v451(): void
+    {
+        try {
+            $pdo = Capsule::connection()->getPdo();
+            $pdo->beginTransaction();
+
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_password_reset_attempts (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    ip VARCHAR(45) NOT NULL,
+                    client_id INT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_ip_created (ip, created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+            }
+
+            lkn_hn_log('Database 4.5.1 success', null, ['password_reset_attempts' => true]);
+        } catch (Throwable $th) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            lkn_hn_log('Database 4.5.1 upgrade failed', null, $th->__toString());
+        }
+    }
 }

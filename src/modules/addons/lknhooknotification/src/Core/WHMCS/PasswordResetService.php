@@ -34,7 +34,32 @@ final class PasswordResetService
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
 
         if (!$email) {
-            return [];
+            return $this->neutralResponse();
+        }
+
+        /** @var null|string $clientIp */
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
+        $windowStart      = $thirtyMinutesAgo->format('Y-m-d H:i:s');
+
+        // Fase 1 (hardening): rate limit by requester IP (dedicated table), added
+        // on top of the existing per-target (client_id) limit below. Guarded by
+        // hasTable so the endpoint keeps working if the upgrade has not run yet.
+        if (Capsule::schema()->hasTable('mod_lkn_hook_notification_password_reset_attempts')) {
+            $ipAttemptsCount = Capsule::table('mod_lkn_hook_notification_password_reset_attempts')
+                ->where('ip', $clientIp)
+                ->where('created_at', '>=', $windowStart)
+                ->count();
+
+            if ($ipAttemptsCount >= 10) {
+                return ['exceeded_try' => true];
+            }
+
+            Capsule::table('mod_lkn_hook_notification_password_reset_attempts')->insert([
+                'ip' => $clientIp,
+                'created_at' => (new DateTime())->format('Y-m-d H:i:s'),
+            ]);
         }
 
         /** @var null|object{id: int, email: string, reset_token: string, reset_token_expiry: string} $user */
@@ -44,15 +69,14 @@ final class PasswordResetService
         $client = Capsule::table('tblclients')->where('email', $email)->first(['id', 'email']);
 
         if (!$user && !$client) {
-            return [];
+            // Fase 1 (hardening): uniform response, avoid account enumeration.
+            return $this->neutralResponse();
         }
-
-        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
 
         $attemptsCount = Capsule::table('mod_lkn_hook_notification_reports')
             ->where('client_id', $user->id ?? $client->id)
             ->where('notification', 'SafePasswordReset')
-            ->where('created_at', '>=', $thirtyMinutesAgo->format('Y-m-d H:i:s'))
+            ->where('created_at', '>=', $windowStart)
             ->count();
 
         if ($attemptsCount > 5) {
@@ -64,7 +88,7 @@ final class PasswordResetService
         $systemUrl = Capsule::table('tblconfiguration')->where('setting', 'SystemURL')->value('value');
 
         if (!$systemUrl) {
-            return [];
+            return $this->neutralResponse();
         }
 
         if ($client) {
@@ -75,13 +99,23 @@ final class PasswordResetService
             return $this->notifyUser($user);
         }
 
-        return [];
+        return $this->neutralResponse();
 
         // tem cliente, tem usuario, envia whatsapp
         // tem client nao tem usuario, envia email
         // Pesquisar o email na tabela users, verifica se o usuário esta em mais de um cliente em tblusers_clientes.
         // Se estiver em apenas 1 cliente pesquisar na tabela client pelo email e pega o número e envia.
         // Se estiver em mais de um cliente enviar apenas o email de troca de senha.
+    }
+
+    /**
+     * Fase 1 (hardening): uniform "no action" response to avoid account enumeration.
+     *
+     * @return array{sent_to_email: null, sent_to_phone: null}
+     */
+    private function neutralResponse(): array
+    {
+        return ['sent_to_email' => null, 'sent_to_phone' => null];
     }
 
     /**

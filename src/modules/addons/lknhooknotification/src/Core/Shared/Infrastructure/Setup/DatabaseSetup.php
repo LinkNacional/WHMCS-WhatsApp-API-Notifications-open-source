@@ -94,6 +94,20 @@ final class DatabaseSetup
 
             $statement->execute();
 
+            // Fase 1 (hardening): dedicated table for per-IP rate limiting of the
+            // password reset endpoint. Idempotent (IF NOT EXISTS), no destructive migration.
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_password_reset_attempts (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    ip VARCHAR(45) NOT NULL,
+                    client_id INT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_ip_created (ip, created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
             if ($pdo->inTransaction()) {
                 $pdo->commit();
             }

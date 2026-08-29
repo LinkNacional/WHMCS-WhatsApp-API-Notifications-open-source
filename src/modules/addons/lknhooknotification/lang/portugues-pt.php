@@ -444,6 +444,7 @@ $_ADDONLANG['Select a parameter'] = 'Selecione um parâmetro';
 $_ADDONLANG['Change message template'] = 'Trocar message template';
 $_ADDONLANG['Sent to WhatsApp:'] = 'Enviado para WhatsApp';
 $_ADDONLANG['Sent to email:'] = 'Enviado para email';
+$_ADDONLANG['If an account with this email exists, we have sent the reset instructions.'] = 'Se existir uma conta com este e-mail, enviámos as instruções de redefinição de senha.';
 $_ADDONLANG['By default, the module will use WHMCS default phone number field or you can specify a WhatsApp custom field below.'] = 'Por padrão, o módulo usará o campo de número de telefone padrão do WHMCS ou você pode especificar um campo personalizado do WhatsApp abaixo.';
 $_ADDONLANG['WhatsApp custom field'] = 'Campo personalizado do WhatsApp';
 $_ADDONLANG['Custom fields for tickets of unregistered clients'] = 'Campos personalizados para tickets de clientes não registrados';
