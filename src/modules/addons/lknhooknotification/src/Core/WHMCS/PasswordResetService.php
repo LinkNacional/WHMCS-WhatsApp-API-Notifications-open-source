@@ -134,22 +134,25 @@ final class PasswordResetService
      */
     private function notifyUser(object $user): array
     {
-        $userResetToken       = $user->reset_token;
         $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
 
+        $emailSent = false;
+
         if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            /** @var array{email: string} $output */
-            $output         = localAPI('ResetPassword', ['email' => $user->email]);
-            $userResetToken = Capsule::table('tblusers')->where('id', $user->id)->value('reset_token');
+            // Token expirado/ausente: localAPI gera o token E envia o email nativo.
+            /** @var array<string, mixed> $output */
+            $output    = localAPI('ResetPassword', ['email' => $user->email]);
+            $emailSent = is_array($output) && ($output['result'] ?? '') === 'success';
+        } else {
+            // Token válido: envia o email com a URL atual (não invalida o link).
+            $resetUrl  = get_passsword_reset_url_for_user($user->email);
+            $emailSent = $this->sendEmail($user->id, $resetUrl);
         }
 
-        $resetUrl = get_passsword_reset_url_for_user($user->email);
-
-        $sendEmailResult = $this->sendEmail($user->id, $resetUrl);
         /** @var array{sent_to_email: string, sent_to_phone?: string} $result */
         $result = [];
 
-        if ($sendEmailResult) {
+        if ($emailSent) {
             $result['sent_to_email'] = lkn_hn_mask_value($user->email);
         }
 
@@ -210,27 +213,28 @@ final class PasswordResetService
             return [];
         }
 
-        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
-
-        $userResetToken       = $user->reset_token;
         $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
 
+        $emailSent = false;
+
         if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            /** @var array{email: string} $output */
-            $output         = localAPI('ResetPassword', ['email' => $user->email]);
-            $userResetToken = Capsule::table('tblusers')->where('email', $output['email'])->value('reset_token');
+            // Token expirado/ausente: localAPI gera o token E envia o email nativo
+            // (para o usuário proprietário).
+            /** @var array<string, mixed> $output */
+            $output    = localAPI('ResetPassword', ['email' => $user->email]);
+            $emailSent = is_array($output) && ($output['result'] ?? '') === 'success';
+        } else {
+            // Token válido: envia o email com a URL atual (não invalida o link).
+            $resetUrl  = get_passsword_reset_url_for_user($user->email);
+            $emailSent = $this->sendEmail($client->id, $resetUrl);
         }
 
         /** @var array{sent_to_email: string, sent_to_phone: string} $result */
         $result = [];
 
-        // Fase 4 (bug fix): build the real reset URL from the owner user token
-        // (was passing the client email as the reset URL).
-        $resetUrl         = get_passsword_reset_url_for_user($user->email);
-        $sendEmailResult = $this->sendEmail($client->id, $resetUrl);
-
-        if ($sendEmailResult) {
-            $result['sent_to_email'] = lkn_hn_mask_value($client->email);
+        if ($emailSent) {
+            // O email vai para o usuário proprietário (não o email do perfil do cliente).
+            $result['sent_to_email'] = lkn_hn_mask_value($user->email);
         }
 
         $sendWhatsAppNotificationResult = $this->sendWhatsAppNotification(
