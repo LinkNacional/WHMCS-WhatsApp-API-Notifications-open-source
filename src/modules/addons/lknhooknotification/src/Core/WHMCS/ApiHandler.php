@@ -44,7 +44,10 @@ final class ApiHandler extends Singleton {
             http_response_code(200);
             Header('Content-Type: application/json');
         } else {
+            // Fase 3 (observabilidade): rota inválida -> 404 com body JSON (sem corpo vazio).
             http_response_code(404);
+            Header('Content-Type: application/json');
+            echo json_encode(['error' => 'not_found']);
         }
     }
 

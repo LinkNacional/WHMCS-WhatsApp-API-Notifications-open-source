@@ -52,7 +52,10 @@ try {
     $endpoint = $_GET['endpoint'] ?? '';
 
     if (empty($endpoint)) {
-        echo 'empty endpoint';
+        http_response_code(400);
+        Header('Content-Type: application/json');
+        echo json_encode(['error' => 'empty_endpoint']);
+        exit;
     } else {
         ApiHandler::getInstance()->routeEndpoint($endpoint);
     }
