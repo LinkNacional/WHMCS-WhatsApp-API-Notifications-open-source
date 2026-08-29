@@ -172,6 +172,14 @@ final class PasswordResetService
             $user->email,
         );
 
+        // Fase 4 (bug fix): attach sent_to_phone (was discarding the WhatsApp result).
+        if (
+            $sendWhatsAppNotificationResult instanceof PlatformNotificationSendResult
+            && $sendWhatsAppNotificationResult->status === NotificationReportStatus::SENT
+        ) {
+            $result['sent_to_phone'] = lkn_hn_mask_value($sendWhatsAppNotificationResult->target ?? '');
+        }
+
         return $result;
     }
 
@@ -216,7 +224,10 @@ final class PasswordResetService
         /** @var array{sent_to_email: string, sent_to_phone: string} $result */
         $result = [];
 
-        $sendEmailResult = $this->sendEmail($client->id, $client->email);
+        // Fase 4 (bug fix): build the real reset URL from the owner user token
+        // (was passing the client email as the reset URL).
+        $resetUrl         = get_passsword_reset_url_for_user($user->email);
+        $sendEmailResult = $this->sendEmail($client->id, $resetUrl);
 
         if ($sendEmailResult) {
             $result['sent_to_email'] = lkn_hn_mask_value($client->email);
