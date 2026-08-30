@@ -157,6 +157,6 @@ $_ADDONLANG['login_otp_error_client_not_found'] = 'Account not found.';
 $_ADDONLANG['login_otp_error_invalid_account'] = 'Invalid account selection.';
 $_ADDONLANG['login_otp_error_login_failed'] = 'Login failed. Please try again.';
 $_ADDONLANG['login_otp_error_invalid_input'] = 'Invalid phone number or code.';
-$_ADDONLANG['login_otp_back'] = 'Back';
+$_ADDONLANG['login_otp_back'] = 'See other login methods';
 $_ADDONLANG['login_otp_invalid_phone'] = 'Please enter a valid phone number.';
 $_ADDONLANG['If an account with this email exists, we have sent the reset instructions.'] = 'If an account with this email exists, we have sent the reset instructions.';

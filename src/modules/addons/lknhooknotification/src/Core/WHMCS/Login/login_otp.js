@@ -89,13 +89,13 @@
             const style = document.createElement('style');
             style.id = 'lkn-login-otp-style';
             style.textContent = `
-                .lkn-login-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 0; border: none; background: none; color: #007bff; cursor: pointer; font-size: 0.95rem; }
-                .lkn-login-back:hover { text-decoration: underline; color: #0056b3; }
                 .lkn-login-chooser-hint { margin-bottom: 14px; }
                 .lkn-login-method { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
                 .lkn-login-google-wrap { text-align: center; margin: 8px 0 4px; }
+                .lkn-login-back-wrap { margin-top: 8px; }
                 #lkn-login-whatsapp label { font-weight: 500; }
                 #lkn-login-whatsapp input { margin-bottom: 12px; }
+                #lkn-login-send { margin-top: 10px; }
                 #lkn-login-whatsapp .lkn-login-msg { margin: 10px 0; font-size: 0.9em; color: #666; }
                 #lkn-login-whatsapp .lkn-login-msg.lkn-login-error { color: #d9534f; }
                 #lkn-login-accounts .lkn-login-account { display: block; width: 100%; margin-bottom: 8px; text-align: left; }
@@ -163,26 +163,23 @@
 
         let chooserCard = null;
         let whatsappCard = null;
-        let backBtn = null;
 
-        function removeBackButton() {
-            if (backBtn) {
-                backBtn.remove();
-                backBtn = null;
+        function ensureBackInFooter(footer) {
+            if (!footer) {
+                return;
             }
-        }
-
-        function ensureBackButton() {
-            if (backBtn) {
-                return backBtn;
+            if (footer.querySelector('.lkn-login-back-wrap')) {
+                return;
             }
-            backBtn = document.createElement('button');
-            backBtn.type = 'button';
-            backBtn.className = 'lkn-login-back';
-            backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> ' + t('login_otp_back');
-            backBtn.addEventListener('click', goBack);
-            loginForm.parentNode.insertBefore(backBtn, loginForm);
-            return backBtn;
+            const wrap = document.createElement('div');
+            wrap.className = 'lkn-login-back-wrap';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm lkn-login-back';
+            btn.textContent = t('login_otp_back');
+            btn.addEventListener('click', goBack);
+            wrap.appendChild(btn);
+            footer.appendChild(wrap);
         }
 
         function removeWhatsappCard() {
@@ -292,6 +289,8 @@
             const msg = fields.querySelector('#lkn-login-msg');
             const accounts = fields.querySelector('#lkn-login-accounts');
 
+            ensureBackInFooter(card.querySelector('.card-footer'));
+
             let iti = null;
 
             function initPhone() {
@@ -379,6 +378,14 @@
                 });
             });
 
+            // Auto-submete ao completar 6 dígitos.
+            otpInput.addEventListener('input', () => {
+                otpInput.value = otpInput.value.replace(/\D/g, '').slice(0, 6);
+                if (otpInput.value.length === 6) {
+                    verifyBtn.click();
+                }
+            });
+
             function renderAccountSelection(list) {
                 accounts.innerHTML = '<div class="lkn-login-accounts-title">' + t('login_otp_select_account') + '</div>';
                 list.forEach((acc) => {
@@ -410,10 +417,10 @@
             }
             hideEmailForm();
             removeWhatsappCard();
-            ensureBackButton();
 
             if (method === 'email') {
                 showEmailForm();
+                ensureBackInFooter(loginForm.querySelector('.card-footer'));
             } else if (method === 'whatsapp') {
                 showWhatsApp();
             }
@@ -421,7 +428,6 @@
 
         function goBack() {
             deleteCookie(COOKIE_NAME);
-            removeBackButton();
             removeWhatsappCard();
             hideEmailForm();
             showChooser();
