@@ -19,8 +19,6 @@
         const COOKIE_DAYS = 30;
         const API_BASE = '/modules/addons/lknhooknotification/src/Core/api.php';
 
-        // Form de login: WHMCS usa `dologin.php`, mas temas customizados podem usar
-        // `/login` ou outro action. Fallback robusto: form com input[name="username"].
         const loginForm = Array.from(document.querySelectorAll('form')).find((f) => f.querySelector('input[name="username"]'))
             || document.querySelector('form[action*="dologin"]')
             || null;
@@ -28,12 +26,9 @@
             return;
         }
 
-        // Token CSRF: prefere o do formulário (atual da página); fallback ao injetado.
         const tokenInput = loginForm.querySelector('input[name="token"], input[name="csrftoken"]');
         const csrfToken = (tokenInput && tokenInput.value) || injectedToken;
 
-        // Botão do Google (OAuth2) — best-effort, tema-agnóstico. Cobre o container
-        // #login-social e classes btn-google/#btnGoogleSignin1 de temas customizados.
         const googleEl = document.querySelector('#login-social')
             || document.querySelector('.btn-google, [class*="btn-google"], #btnGoogleSignin1')
             || Array.from(document.querySelectorAll('a, button')).find((el) =>
@@ -52,6 +47,10 @@
             return m ? decodeURIComponent(m[1]) : null;
         }
 
+        function deleteCookie(name) {
+            document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+        }
+
         function injectStyles() {
             if (document.getElementById('lkn-login-otp-style')) {
                 return;
@@ -59,15 +58,75 @@
             const style = document.createElement('style');
             style.id = 'lkn-login-otp-style';
             style.textContent = `
-                #lkn-login-chooser, #lkn-login-whatsapp { margin: 0 auto 20px; max-width: 400px; text-align: center; }
-                #lkn-login-chooser .lkn-login-chooser-title { margin-bottom: 15px; font-weight: 600; }
-                #lkn-login-chooser .lkn-login-method { display: block; width: 100%; margin-bottom: 10px; }
+                #lkn-login-chooser, #lkn-login-whatsapp { margin: 0 auto 20px; max-width: 400px; }
+                #lkn-login-chooser { text-align: center; }
+                #lkn-login-chooser .lkn-login-chooser-title { margin-bottom: 18px; font-weight: 600; font-size: 1.05rem; }
+                #lkn-login-chooser .lkn-login-method { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 12px; padding: 10px 14px; }
+                .lkn-login-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 14px; padding: 0; border: none; background: none; color: #007bff; cursor: pointer; font-size: 0.95rem; }
+                .lkn-login-back:hover { text-decoration: underline; color: #0056b3; }
+                #lkn-login-whatsapp { text-align: left; }
+                #lkn-login-whatsapp label { font-weight: 500; }
+                #lkn-login-whatsapp input { margin-bottom: 12px; }
                 #lkn-login-whatsapp .lkn-login-msg { margin: 10px 0; font-size: 0.9em; color: #666; }
-                #lkn-login-whatsapp input { margin-bottom: 10px; }
-                #lkn-login-accounts .lkn-login-account { display: block; width: 100%; margin-bottom: 8px; }
+                #lkn-login-whatsapp .lkn-login-msg.lkn-login-error { color: #d9534f; }
+                #lkn-login-accounts .lkn-login-account { display: block; width: 100%; margin-bottom: 8px; text-align: left; }
                 #lkn-login-accounts .lkn-login-accounts-title { margin: 10px 0; font-weight: 600; }
             `;
             document.head.appendChild(style);
+        }
+
+        async function withLoading(btn, fn) {
+            if (!btn) {
+                return fn();
+            }
+            btn.disabled = true;
+            const spinner = document.createElement('span');
+            spinner.className = 'spinner-border spinner-border-sm';
+            spinner.setAttribute('role', 'status');
+            spinner.setAttribute('aria-hidden', 'true');
+            btn.insertBefore(spinner, btn.firstChild);
+            try {
+                return await fn();
+            } finally {
+                btn.disabled = false;
+                if (spinner.parentNode) spinner.remove();
+            }
+        }
+
+        function setMsg(el, text, isError) {
+            el.textContent = text;
+            el.classList.toggle('lkn-login-error', !!isError);
+        }
+
+        let backBtn = null;
+
+        function removeBackButton() {
+            if (backBtn) {
+                backBtn.remove();
+                backBtn = null;
+            }
+        }
+
+        function ensureBackButton() {
+            if (backBtn) {
+                return backBtn;
+            }
+            backBtn = document.createElement('button');
+            backBtn.type = 'button';
+            backBtn.className = 'lkn-login-back';
+            backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> ' + t('login_otp_back');
+            backBtn.addEventListener('click', goBack);
+            loginForm.parentNode.insertBefore(backBtn, loginForm);
+            return backBtn;
+        }
+
+        function goBack() {
+            deleteCookie(COOKIE_NAME);
+            removeBackButton();
+            hideEmailForm();
+            hideGoogle();
+            removeWhatsApp();
+            renderChooser();
         }
 
         function renderChooser() {
@@ -76,17 +135,17 @@
             chooser.innerHTML = '<div class="lkn-login-chooser-title">' + t('login_otp_choose_method') + '</div>';
 
             [
-                ['email', t('login_otp_email'), 'btn-primary'],
-                ['whatsapp', t('login_otp_whatsapp'), 'btn-success'],
-                ['google', t('login_otp_google'), 'btn-default'],
-            ].forEach(([method, label, cls]) => {
+                ['email', '<i class="fas fa-envelope"></i> ' + t('login_otp_email'), 'btn-primary'],
+                ['whatsapp', '<i class="fab fa-whatsapp"></i> ' + t('login_otp_whatsapp'), 'btn-success'],
+                ['google', '<i class="fab fa-google"></i> ' + t('login_otp_google'), 'btn-default'],
+            ].forEach(([method, labelHtml, cls]) => {
                 if (method === 'google' && !googleEl) {
                     return;
                 }
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'btn ' + cls + ' lkn-login-method';
-                b.textContent = label;
+                b.innerHTML = labelHtml;
                 b.addEventListener('click', () => {
                     setCookie(COOKIE_NAME, method, COOKIE_DAYS);
                     showMethod(method);
@@ -154,24 +213,22 @@
                 return translations['login_otp_error_' + code] || t('login_otp_generic_error');
             }
 
-            sendBtn.addEventListener('click', async () => {
+            sendBtn.addEventListener('click', () => {
                 const phone = (phoneInput.value || '').trim();
                 if (!phone) {
-                    msg.textContent = t('login_otp_phone_required');
+                    setMsg(msg, t('login_otp_phone_required'), true);
                     return;
                 }
-                sendBtn.disabled = true;
-                try {
-                    await post('login/otp/send', '?phone=' + encodeURIComponent(phone));
-                    // Resposta sempre neutra (anti-enumeração).
-                    msg.textContent = t('login_otp_sent_hint');
-                    otpWrap.style.display = '';
-                    otpInput.focus();
-                } catch (e) {
-                    msg.textContent = t('login_otp_generic_error');
-                } finally {
-                    sendBtn.disabled = false;
-                }
+                withLoading(sendBtn, async () => {
+                    try {
+                        await post('login/otp/send', '?phone=' + encodeURIComponent(phone));
+                        setMsg(msg, t('login_otp_sent_hint'), false);
+                        otpWrap.style.display = '';
+                        otpInput.focus();
+                    } catch (e) {
+                        setMsg(msg, t('login_otp_generic_error'), true);
+                    }
+                });
             });
 
             async function verify(phone, otp, clientId) {
@@ -188,24 +245,23 @@
                     renderAccountSelection(res.accounts);
                     return;
                 }
-                msg.textContent = errorText((res && res.error) || '');
+                setMsg(msg, errorText((res && res.error) || ''), true);
             }
 
-            verifyBtn.addEventListener('click', async () => {
+            verifyBtn.addEventListener('click', () => {
                 const phone = (phoneInput.value || '').trim();
                 const otp = (otpInput.value || '').trim();
                 if (!phone || !otp) {
-                    msg.textContent = t('login_otp_code_required');
+                    setMsg(msg, t('login_otp_code_required'), true);
                     return;
                 }
-                verifyBtn.disabled = true;
-                try {
-                    handleVerifyResult(await verify(phone, otp));
-                } catch (e) {
-                    msg.textContent = t('login_otp_generic_error');
-                } finally {
-                    verifyBtn.disabled = false;
-                }
+                withLoading(verifyBtn, async () => {
+                    try {
+                        handleVerifyResult(await verify(phone, otp));
+                    } catch (e) {
+                        setMsg(msg, t('login_otp_generic_error'), true);
+                    }
+                });
             });
 
             function renderAccountSelection(list) {
@@ -215,16 +271,18 @@
                     b.type = 'button';
                     b.className = 'btn btn-default lkn-login-account';
                     b.textContent = acc.email;
-                    b.addEventListener('click', async () => {
-                        try {
-                            handleVerifyResult(await verify(
-                                (phoneInput.value || '').trim(),
-                                (otpInput.value || '').trim(),
-                                acc.id
-                            ));
-                        } catch (e) {
-                            msg.textContent = t('login_otp_generic_error');
-                        }
+                    b.addEventListener('click', () => {
+                        withLoading(b, async () => {
+                            try {
+                                handleVerifyResult(await verify(
+                                    (phoneInput.value || '').trim(),
+                                    (otpInput.value || '').trim(),
+                                    acc.id
+                                ));
+                            } catch (e) {
+                                setMsg(msg, t('login_otp_generic_error'), true);
+                            }
+                        });
                     });
                     accounts.appendChild(b);
                 });
@@ -237,6 +295,7 @@
             hideEmailForm();
             hideGoogle();
             removeWhatsApp();
+            ensureBackButton();
 
             if (method === 'email') {
                 showEmailForm();
