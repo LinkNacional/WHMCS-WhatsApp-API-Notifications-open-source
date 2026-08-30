@@ -29,12 +29,15 @@
         const tokenInput = loginForm.querySelector('input[name="token"], input[name="csrftoken"]');
         const csrfToken = (tokenInput && tokenInput.value) || injectedToken;
 
-        const googleEl = document.querySelector('#login-social')
-            || document.querySelector('.btn-google, [class*="btn-google"], #btnGoogleSignin1')
-            || Array.from(document.querySelectorAll('a, button')).find((el) =>
-                /google/i.test(el.getAttribute('href') || '') || /google/i.test(el.textContent || '')
-            )
+        // Botão real do Google (OAuth2) — clicável direto no chooser.
+        const googleBtn = document.querySelector('#btnGoogleSignin1')
+            || document.querySelector('.btn-google, [class*="btn-google"]')
+            || document.querySelector('#login-social')
             || null;
+
+        const ITI_CSS = 'https://cdn.jsdelivr.net/npm/intl-tel-input@17/build/css/intlTelInput.min.css';
+        const ITI_JS = 'https://cdn.jsdelivr.net/npm/intl-tel-input@17/build/js/intlTelInput.min.js';
+        const ITI_UTILS = 'https://cdn.jsdelivr.net/npm/intl-tel-input@17/build/js/utils.js';
 
         function setCookie(name, value, days) {
             const d = new Date();
@@ -51,6 +54,34 @@
             document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
         }
 
+        function loadCss(href, id) {
+            if (id && document.getElementById(id)) {
+                return;
+            }
+            const l = document.createElement('link');
+            l.rel = 'stylesheet';
+            l.href = href;
+            if (id) l.id = id;
+            document.head.appendChild(l);
+        }
+
+        function loadScript(src, onload) {
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = true;
+            if (onload) s.onload = onload;
+            document.head.appendChild(s);
+        }
+
+        function ensureIntlTelInput(cb) {
+            if (window.intlTelInput) {
+                cb();
+                return;
+            }
+            loadCss(ITI_CSS, 'lkn-intl-tel-css');
+            loadScript(ITI_JS, cb);
+        }
+
         function injectStyles() {
             if (document.getElementById('lkn-login-otp-style')) {
                 return;
@@ -62,6 +93,7 @@
                 .lkn-login-back:hover { text-decoration: underline; color: #0056b3; }
                 .lkn-login-chooser-hint { margin-bottom: 14px; }
                 .lkn-login-method { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
+                .lkn-login-google-wrap { text-align: center; margin: 8px 0 4px; }
                 #lkn-login-whatsapp label { font-weight: 500; }
                 #lkn-login-whatsapp input { margin-bottom: 12px; }
                 #lkn-login-whatsapp .lkn-login-msg { margin: 10px 0; font-size: 0.9em; color: #666; }
@@ -95,8 +127,7 @@
             el.classList.toggle('lkn-login-error', !!isError);
         }
 
-        // Constrói um card com o mesmo visual do form de e-mail: clona o header
-        // (título + subtítulo) e o footer (cadastro + esqueceu a senha) do form original.
+        // Constrói um card com o mesmo visual do form de e-mail (clona header/footer).
         function buildCard() {
             const srcCard = loginForm.querySelector('.card');
             const srcBody = loginForm.querySelector('.card-body');
@@ -130,15 +161,9 @@
             return { card, body };
         }
 
-        let activeCard = null;
+        let chooserCard = null;
+        let whatsappCard = null;
         let backBtn = null;
-
-        function clearActiveCard() {
-            if (activeCard) {
-                activeCard.remove();
-                activeCard = null;
-            }
-        }
 
         function removeBackButton() {
             if (backBtn) {
@@ -160,45 +185,11 @@
             return backBtn;
         }
 
-        function goBack() {
-            deleteCookie(COOKIE_NAME);
-            removeBackButton();
-            clearActiveCard();
-            hideEmailForm();
-            hideGoogle();
-            renderChooser();
-        }
-
-        function renderChooser() {
-            clearActiveCard();
-            const { card, body } = buildCard();
-
-            const hint = document.createElement('p');
-            hint.className = 'text-muted lkn-login-chooser-hint';
-            hint.textContent = t('login_otp_choose_method');
-            body.appendChild(hint);
-
-            [
-                ['email', '<i class="fas fa-envelope"></i> ' + t('login_otp_email'), 'btn-primary'],
-                ['whatsapp', '<i class="fab fa-whatsapp"></i> ' + t('login_otp_whatsapp'), 'btn-success'],
-                ['google', '<i class="fab fa-google"></i> ' + t('login_otp_google'), 'btn-default'],
-            ].forEach(([method, labelHtml, cls]) => {
-                if (method === 'google' && !googleEl) {
-                    return;
-                }
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'btn ' + cls + ' btn-block lkn-login-method';
-                b.innerHTML = labelHtml;
-                b.addEventListener('click', () => {
-                    setCookie(COOKIE_NAME, method, COOKIE_DAYS);
-                    showMethod(method);
-                });
-                body.appendChild(b);
-            });
-
-            activeCard = card;
-            loginForm.parentNode.insertBefore(card, loginForm);
+        function removeWhatsappCard() {
+            if (whatsappCard) {
+                whatsappCard.remove();
+                whatsappCard = null;
+            }
         }
 
         function hideEmailForm() {
@@ -207,11 +198,56 @@
         function showEmailForm() {
             loginForm.style.display = '';
         }
-        function hideGoogle() {
-            if (googleEl) googleEl.style.display = 'none';
+
+        function ensureChooser() {
+            if (chooserCard) {
+                return chooserCard;
+            }
+            const { card, body } = buildCard();
+
+            const hint = document.createElement('p');
+            hint.className = 'text-muted lkn-login-chooser-hint';
+            hint.textContent = t('login_otp_choose_method');
+            body.appendChild(hint);
+
+            const emailBtn = document.createElement('button');
+            emailBtn.type = 'button';
+            emailBtn.className = 'btn btn-primary btn-block lkn-login-method';
+            emailBtn.innerHTML = '<i class="fas fa-envelope"></i> ' + t('login_otp_email');
+            emailBtn.addEventListener('click', () => {
+                setCookie(COOKIE_NAME, 'email', COOKIE_DAYS);
+                showMethod('email');
+            });
+            body.appendChild(emailBtn);
+
+            const waBtn = document.createElement('button');
+            waBtn.type = 'button';
+            waBtn.className = 'btn btn-success btn-block lkn-login-method';
+            waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> ' + t('login_otp_whatsapp');
+            waBtn.addEventListener('click', () => {
+                setCookie(COOKIE_NAME, 'whatsapp', COOKIE_DAYS);
+                showMethod('whatsapp');
+            });
+            body.appendChild(waBtn);
+
+            // Move o botão real do Google para dentro do chooser (clique direto abre o popup).
+            if (googleBtn) {
+                const wrap = document.createElement('div');
+                wrap.className = 'lkn-login-google-wrap';
+                wrap.appendChild(googleBtn);
+                body.appendChild(wrap);
+            }
+
+            chooserCard = card;
+            loginForm.parentNode.insertBefore(card, loginForm);
+            return chooserCard;
         }
-        function showGoogle() {
-            if (googleEl) googleEl.style.display = '';
+
+        function showChooser() {
+            const card = ensureChooser();
+            hideEmailForm();
+            removeWhatsappCard();
+            card.style.display = '';
         }
 
         async function post(endpoint, params) {
@@ -226,14 +262,14 @@
         }
 
         function showWhatsApp() {
-            clearActiveCard();
+            removeWhatsappCard();
             const { card, body } = buildCard();
 
             const fields = document.createElement('div');
             fields.id = 'lkn-login-whatsapp';
             fields.innerHTML = `
                 <label for="lkn-login-phone">${t('login_otp_phone_label')}</label>
-                <input type="tel" id="lkn-login-phone" class="form-control" autocomplete="tel" placeholder="+5511999999999">
+                <input type="tel" id="lkn-login-phone" class="form-control" autocomplete="tel">
                 <button type="button" id="lkn-login-send" class="btn btn-primary btn-block">${t('login_otp_send_code')}</button>
                 <div id="lkn-login-msg" class="lkn-login-msg"></div>
                 <div id="lkn-login-otp-wrap" style="display:none">
@@ -245,7 +281,7 @@
             `;
             body.appendChild(fields);
 
-            activeCard = card;
+            whatsappCard = card;
             loginForm.parentNode.insertBefore(card, loginForm);
 
             const phoneInput = fields.querySelector('#lkn-login-phone');
@@ -256,14 +292,43 @@
             const msg = fields.querySelector('#lkn-login-msg');
             const accounts = fields.querySelector('#lkn-login-accounts');
 
+            let iti = null;
+
+            function initPhone() {
+                try {
+                    iti = window.intlTelInput(phoneInput, {
+                        initialCountry: 'br',
+                        preferredCountries: ['br', 'pt', 'us'],
+                        separateDialCode: true,
+                        utilsScript: ITI_UTILS,
+                    });
+                } catch (e) {
+                    iti = null;
+                }
+            }
+
+            ensureIntlTelInput(initPhone);
+
+            function getPhone() {
+                if (iti) {
+                    if (!iti.isValidNumber()) {
+                        return null;
+                    }
+                    return iti.getNumber();
+                }
+                // Fallback sem intl-tel-input: sanitização leve (dígitos e +).
+                const raw = (phoneInput.value || '').trim().replace(/[^0-9+]/g, '');
+                return raw || null;
+            }
+
             function errorText(code) {
                 return translations['login_otp_error_' + code] || t('login_otp_generic_error');
             }
 
             sendBtn.addEventListener('click', () => {
-                const phone = (phoneInput.value || '').trim();
+                const phone = getPhone();
                 if (!phone) {
-                    setMsg(msg, t('login_otp_phone_required'), true);
+                    setMsg(msg, t('login_otp_invalid_phone'), true);
                     return;
                 }
                 withLoading(sendBtn, async () => {
@@ -299,7 +364,7 @@
             }
 
             verifyBtn.addEventListener('click', () => {
-                const phone = (phoneInput.value || '').trim();
+                const phone = getPhone();
                 const otp = (otpInput.value || '').trim();
                 if (!phone || !otp) {
                     setMsg(msg, t('login_otp_code_required'), true);
@@ -325,7 +390,7 @@
                         withLoading(b, async () => {
                             try {
                                 handleVerifyResult(await verify(
-                                    (phoneInput.value || '').trim(),
+                                    getPhone(),
                                     (otpInput.value || '').trim(),
                                     acc.id
                                 ));
@@ -340,29 +405,36 @@
         }
 
         function showMethod(method) {
-            clearActiveCard();
+            if (chooserCard) {
+                chooserCard.style.display = 'none';
+            }
             hideEmailForm();
-            hideGoogle();
+            removeWhatsappCard();
             ensureBackButton();
 
             if (method === 'email') {
                 showEmailForm();
             } else if (method === 'whatsapp') {
                 showWhatsApp();
-            } else if (method === 'google') {
-                showGoogle();
             }
+        }
+
+        function goBack() {
+            deleteCookie(COOKIE_NAME);
+            removeBackButton();
+            removeWhatsappCard();
+            hideEmailForm();
+            showChooser();
         }
 
         injectStyles();
 
         const pref = getCookie(COOKIE_NAME);
-        if (pref === 'email' || pref === 'whatsapp' || pref === 'google') {
+        if (pref === 'email' || pref === 'whatsapp') {
             showMethod(pref);
         } else {
             hideEmailForm();
-            hideGoogle();
-            renderChooser();
+            showChooser();
         }
     }
 
