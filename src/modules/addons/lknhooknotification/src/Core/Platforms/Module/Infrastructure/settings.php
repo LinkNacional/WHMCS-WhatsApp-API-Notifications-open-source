@@ -79,5 +79,46 @@ return [
         'default'=> [
             'value'=> null,  'label' => lkn_hn_lang('Select the birthday date custom field'),
         ],
-    ]
+    ],
+    [
+        'separator' => true,
+        'title' => lkn_hn_lang('Login OTP (WhatsApp)'),
+        'description' => lkn_hn_lang('Passwordless login via WhatsApp OTP.'),
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_EXPIRY_MINUTES,
+        'label' => lkn_hn_lang('OTP expiry (minutes)'),
+        'description' => lkn_hn_lang('OTP validity window (10-20 minutes).'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_MAX_SENDS_PER_PHONE,
+        'label' => lkn_hn_lang('Max OTP sends per phone'),
+        'description' => lkn_hn_lang('Maximum OTP sends per phone within the window (default 3).'),
+        'type' => 'number',
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_SENDS_WINDOW_MINUTES,
+        'label' => lkn_hn_lang('Sends window (minutes)'),
+        'description' => lkn_hn_lang('Window (minutes) for counting OTP sends per phone (default 30).'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_MAX_ATTEMPTS,
+        'label' => lkn_hn_lang('Max verify attempts'),
+        'description' => lkn_hn_lang('Maximum OTP verification attempts (default 5).'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_COOLDOWN_MINUTES,
+        'label' => lkn_hn_lang('Cooldown (minutes)'),
+        'description' => lkn_hn_lang('Cooldown between OTP resends (default 1).'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::LOGIN_OTP_BLOCK_MINUTES,
+        'label' => lkn_hn_lang('Block (minutes)'),
+        'description' => lkn_hn_lang('Block WhatsApp login after max sends or max failed attempts (default 30).'),
+        'type' => 'text',
+    ],
 ];

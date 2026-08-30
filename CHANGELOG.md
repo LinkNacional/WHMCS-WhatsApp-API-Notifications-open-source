@@ -1,3 +1,10 @@
+# 4.6.1 - 30/08/26
+
+- Login via WhatsApp com OTP (passwordless): envio e verificação de código, bloqueio temporal, seleção de conta e frontend com chooser Email/WhatsApp/Google + intl-tel-input.
+- Hardening do reset de senha via WhatsApp (token estável, rate limit, anti-enumeração).
+- Fonte única de versão do módulo (ModuleInfo::VERSION).
+- Rework do workflow de release (draft automático) e README de instalação/atualização.
+
 # 4.5.0 - 14/07/26
 - Correção e definição de licença GPL
 

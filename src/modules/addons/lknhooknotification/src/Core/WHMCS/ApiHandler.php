@@ -17,6 +17,18 @@ final class ApiHandler extends Singleton {
                 PasswordResetService::class,
                 'run',
             ],
+            'login/otp/send' => [
+                LoginOtpService::class,
+                'send',
+            ],
+            'login/otp/verify' => [
+                LoginOtpService::class,
+                'verify',
+            ],
+            'login/magic-link/verify' => [
+                LoginOtpService::class,
+                'verifyMagicLink',
+            ],
         ];
     }
 
@@ -27,6 +39,18 @@ final class ApiHandler extends Singleton {
 
         /** @var array<string, string> $queryParams */
         parse_str($urlParts['query'] ?? '', $queryParams);
+
+        // Aceita também parâmetros top-level (?endpoint=...&phone=...&otp=...): o `&`
+        // separa os params do endpoint na query string — necessário p/ verify (2+ params).
+        foreach ($_GET as $key => $value) {
+            if ($key === 'endpoint') {
+                continue;
+            }
+
+            if (!array_key_exists($key, $queryParams)) {
+                $queryParams[$key] = $value;
+            }
+        }
 
         $match = $this->extractRouteParams($path);
 
@@ -44,7 +68,10 @@ final class ApiHandler extends Singleton {
             http_response_code(200);
             Header('Content-Type: application/json');
         } else {
+            // Fase 3 (observabilidade): rota inválida -> 404 com body JSON (sem corpo vazio).
             http_response_code(404);
+            Header('Content-Type: application/json');
+            echo json_encode(['error' => 'not_found']);
         }
     }
 

@@ -83,4 +83,63 @@ final class ClientRepository extends BaseRepository
             'langCode' => $parsedClientLang['languageCode'],
         ];
     }
+
+    /**
+     * Reverse lookup: find clients whose WHMCS phone number matches the given
+     * phone (normalized to digits only).
+     *
+     * @return array<int, object{id: int, email: string, phonenumber: string}>
+     */
+    public function getClientsByPhone(string $phone): array
+    {
+        $normalized = preg_replace('/[^0-9]/', '', $phone);
+
+        if ($normalized === '') {
+            return [];
+        }
+
+        $matches = [];
+
+        // Usa UMA única fonte (nunca as duas): o campo personalizado de WhatsApp
+        // configurado no módulo, ou — se não configurado — o campo de telefone
+        // padrão do WHMCS. Espelha Client::getWpPhoneNumberOrWhmcsPhoneNumber.
+        $wpCustomFieldId = lkn_hn_config(Settings::WP_CUSTOM_FIELD_ID);
+
+        if ($wpCustomFieldId) {
+            $byCustomField = $this->query->table('tblcustomfieldsvalues')
+                ->where('fieldid', $wpCustomFieldId)
+                ->select(['relid', 'value'])
+                ->get()
+                ->filter(function ($row) use ($normalized): bool {
+                    return preg_replace('/[^0-9]/', '', (string) ($row->value ?? '')) === $normalized;
+                });
+
+            foreach ($byCustomField as $row) {
+                $clientId = (int) $row->relid;
+
+                $client = $this->query->table('tblclients')
+                    ->where('id', $clientId)
+                    ->select(['id', 'email', 'phonenumber'])
+                    ->first();
+
+                if ($client) {
+                    $matches[$clientId] = $client;
+                }
+            }
+        } else {
+            // Campo de telefone do WHMCS (tblclients.phonenumber).
+            $byWhmcsPhone = $this->query->table('tblclients')
+                ->select(['id', 'email', 'phonenumber'])
+                ->get()
+                ->filter(function ($client) use ($normalized): bool {
+                    return preg_replace('/[^0-9]/', '', (string) ($client->phonenumber ?? '')) === $normalized;
+                });
+
+            foreach ($byWhmcsPhone as $client) {
+                $matches[(int) $client->id] = $client;
+            }
+        }
+
+        return array_values($matches);
+    }
 }

@@ -1,6 +1,7 @@
 window.document.addEventListener('DOMContentLoaded', () => {
     const scriptTag = document.querySelector('script[src$="safe_password_reset.js"]');
     const translations = JSON.parse(scriptTag.dataset.translations);
+    const injectedToken = scriptTag.dataset.csrfToken || '';
 
     function translate(key) {
         return translations[key] || key
@@ -23,8 +24,17 @@ window.document.addEventListener('DOMContentLoaded', () => {
 
         const email = passwordResetEmailInput.value
 
-        const res = await fetch(`/modules/addons/lknhooknotification/src/Core/api.php?endpoint=password/reset?email=${email}`)
-            .then(res => res.json())
+        // Fase 1 (hardening): use o token CSRF que o WHMCS renderizou no formulário
+        // (o valor injetado via data-csrf-token pode estar obsoleto, pois o WHMCS
+        // regenera o token ao renderizar a página).
+        const tokenInput = passwordResetForm.querySelector('input[name="token"], input[name="csrftoken"]')
+        const csrfToken = (tokenInput && tokenInput.value) || injectedToken
+
+        const res = await fetch(`/modules/addons/lknhooknotification/src/Core/api.php?endpoint=password/reset?email=${encodeURIComponent(email)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ token: csrfToken })
+        }).then(res => res.json())
 
         if (res.exceeded_try) {
             sentToPhoneDiv.innerHTML = translate('You have reached the maximum limit of requests. Check your email inbox or SPAM folder or the WhatsApp registered in your profile.')
@@ -38,14 +48,15 @@ window.document.addEventListener('DOMContentLoaded', () => {
         const sentToPhone = res?.sent_to_phone
         const sentToEmail = res?.sent_to_email
 
-        if (Object.keys(res).length === 0) {
-            sentToPhoneDiv.innerHTML = translate('An error occurred!') + `<a href="">${translate('Try again')}</a>`
-        } else if (sentToPhone && sentToEmail) {
+        if (sentToPhone && sentToEmail) {
             sentToPhoneDiv.innerHTML = `${translate('Sent to WhatsApp and email:')}<br>${sentToPhone}<br>${sentToEmail}`
         } else if (sentToPhone) {
             sentToPhoneDiv.innerHTML = `${translate('Sent to WhatsApp:')}<br>${sentToPhone}`
         } else if (sentToEmail) {
             sentToPhoneDiv.innerHTML = `${translate('Sent to email:')}<br>${sentToEmail}`
+        } else {
+            // Fase 1 (hardening): neutral message, avoids account enumeration.
+            sentToPhoneDiv.innerHTML = translate('If an account with this email exists, we have sent the reset instructions.')
         }
 
         submitPasswordResetBtn.parentElement.remove()

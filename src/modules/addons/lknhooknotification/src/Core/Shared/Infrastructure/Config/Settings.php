@@ -67,4 +67,12 @@ enum Settings: string
     case BULK_ENABLE = 'bulk_enable';
 
     case BD_CUSTOM_FIELD_ID = 'bd_custom_field_id';
+
+    case LOGIN_OTP_EXPIRY_MINUTES       = 'login_otp_expiry_minutes';
+    case LOGIN_MAGIC_LINK_ENABLED       = 'login_magic_link_enabled';
+    case LOGIN_OTP_MAX_SENDS_PER_PHONE  = 'login_otp_max_sends';
+    case LOGIN_OTP_SENDS_WINDOW_MINUTES = 'login_otp_sends_window_minutes';
+    case LOGIN_OTP_MAX_ATTEMPTS         = 'login_otp_max_attempts';
+    case LOGIN_OTP_COOLDOWN_MINUTES     = 'login_otp_cooldown_minutes';
+    case LOGIN_OTP_BLOCK_MINUTES        = 'login_otp_block_minutes';
 }

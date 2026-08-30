@@ -48,6 +48,9 @@ final class MetaWhatsAppPlatform extends AbstractPlatform
             );
         }
 
+        // Meta exige 'to' em E.164 SEM '+'.
+        $phoneNumber = str_replace('+', '', (string) $phoneNumber);
+
         if (empty($template->platformPayload['msgTemplateLang'])) {
             return new PlatformNotificationSendResult(
                 NotificationReportStatus::NOT_SENT,

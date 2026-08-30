@@ -6,6 +6,7 @@ use DateTime;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReportStatus;
 use Lkn\HookNotification\Core\Notification\Application\NotificationFactory;
 use Lkn\HookNotification\Core\Notification\Application\Services\NotificationSender;
+use Lkn\HookNotification\Core\Notification\Application\Services\NotificationService;
 use Lkn\HookNotification\Core\Platforms\Common\PlatformNotificationSendResult;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Result;
 use WHMCS\Database\Capsule;
@@ -17,11 +18,13 @@ final class PasswordResetService
 {
     private readonly NotificationFactory $notificationFactory;
     private readonly NotificationSender $notificationSender;
+    private readonly NotificationService $notificationService;
 
     public function __construct()
     {
         $this->notificationFactory = NotificationFactory::getInstance();
         $this->notificationSender  = NotificationSender::getInstance();
+        $this->notificationService = new NotificationService();
     }
 
     /**
@@ -31,10 +34,41 @@ final class PasswordResetService
      */
     public function run(string $email): array
     {
+        // Fase 2 (hardening): respect the admin toggle for the SafePasswordReset
+        // notification. If disabled, do not send anything (email or WhatsApp).
+        if (!$this->notificationService->isNotificationEnabled('SafePasswordReset')) {
+            return $this->neutralResponse();
+        }
+
         $email = filter_var($email, FILTER_SANITIZE_EMAIL);
 
         if (!$email) {
-            return [];
+            return $this->neutralResponse();
+        }
+
+        /** @var null|string $clientIp */
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
+        $windowStart      = $thirtyMinutesAgo->format('Y-m-d H:i:s');
+
+        // Fase 1 (hardening): rate limit by requester IP (dedicated table), added
+        // on top of the existing per-target (client_id) limit below. Guarded by
+        // hasTable so the endpoint keeps working if the upgrade has not run yet.
+        if (Capsule::schema()->hasTable('mod_lkn_hook_notification_password_reset_attempts')) {
+            $ipAttemptsCount = Capsule::table('mod_lkn_hook_notification_password_reset_attempts')
+                ->where('ip', $clientIp)
+                ->where('created_at', '>=', $windowStart)
+                ->count();
+
+            if ($ipAttemptsCount >= 10) {
+                return ['exceeded_try' => true];
+            }
+
+            Capsule::table('mod_lkn_hook_notification_password_reset_attempts')->insert([
+                'ip' => $clientIp,
+                'created_at' => (new DateTime())->format('Y-m-d H:i:s'),
+            ]);
         }
 
         /** @var null|object{id: int, email: string, reset_token: string, reset_token_expiry: string} $user */
@@ -44,15 +78,14 @@ final class PasswordResetService
         $client = Capsule::table('tblclients')->where('email', $email)->first(['id', 'email']);
 
         if (!$user && !$client) {
-            return [];
+            // Fase 1 (hardening): uniform response, avoid account enumeration.
+            return $this->neutralResponse();
         }
-
-        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
 
         $attemptsCount = Capsule::table('mod_lkn_hook_notification_reports')
             ->where('client_id', $user->id ?? $client->id)
             ->where('notification', 'SafePasswordReset')
-            ->where('created_at', '>=', $thirtyMinutesAgo->format('Y-m-d H:i:s'))
+            ->where('created_at', '>=', $windowStart)
             ->count();
 
         if ($attemptsCount > 5) {
@@ -64,7 +97,7 @@ final class PasswordResetService
         $systemUrl = Capsule::table('tblconfiguration')->where('setting', 'SystemURL')->value('value');
 
         if (!$systemUrl) {
-            return [];
+            return $this->neutralResponse();
         }
 
         if ($client) {
@@ -75,7 +108,7 @@ final class PasswordResetService
             return $this->notifyUser($user);
         }
 
-        return [];
+        return $this->neutralResponse();
 
         // tem cliente, tem usuario, envia whatsapp
         // tem client nao tem usuario, envia email
@@ -85,28 +118,32 @@ final class PasswordResetService
     }
 
     /**
+     * Fase 1 (hardening): uniform "no action" response to avoid account enumeration.
+     *
+     * @return array{sent_to_email: null, sent_to_phone: null}
+     */
+    private function neutralResponse(): array
+    {
+        return ['sent_to_email' => null, 'sent_to_phone' => null];
+    }
+
+    /**
      * @param  object{id: int, email: string, reset_token: string, reset_token_expiry: string} $user
      *
      * @return array{sent_to_email: string, sent_to_phone?: string}
      */
     private function notifyUser(object $user): array
     {
-        $userResetToken       = $user->reset_token;
-        $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
+        // Reusa o token se ainda válido; senão gera um novo (o módulo controla o token).
+        $this->ensureResetToken($user);
 
-        if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            /** @var array{email: string} $output */
-            $output         = localAPI('ResetPassword', ['email' => $user->email]);
-            $userResetToken = Capsule::table('tblusers')->where('id', $user->id)->value('reset_token');
-        }
+        $resetUrl  = get_passsword_reset_url_for_user($user->email);
+        $emailSent = $this->sendEmail($user->id, $resetUrl);
 
-        $resetUrl = get_passsword_reset_url_for_user($user->email);
-
-        $sendEmailResult = $this->sendEmail($user->id, $resetUrl);
         /** @var array{sent_to_email: string, sent_to_phone?: string} $result */
         $result = [];
 
-        if ($sendEmailResult) {
+        if ($emailSent) {
             $result['sent_to_email'] = lkn_hn_mask_value($user->email);
         }
 
@@ -129,6 +166,14 @@ final class PasswordResetService
             $user->email,
         );
 
+        // Fase 4 (bug fix): attach sent_to_phone (was discarding the WhatsApp result).
+        if (
+            $sendWhatsAppNotificationResult instanceof PlatformNotificationSendResult
+            && $sendWhatsAppNotificationResult->status === NotificationReportStatus::SENT
+        ) {
+            $result['sent_to_phone'] = lkn_hn_mask_value($sendWhatsAppNotificationResult->target ?? '');
+        }
+
         return $result;
     }
 
@@ -139,8 +184,9 @@ final class PasswordResetService
      */
     private function notifyClient(object $client): array
     {
-        $output = localAPI('ResetPassword', ['email' => $client->email]);
-
+        // Fase 2 (hardening): do NOT reset the password token unconditionally here.
+        // Only regenerate it below if the owner user token is missing/expired
+        // (parity with notifyUser), so a still-valid link is not invalidated.
         /** @var null|int $clientUserOwnerId */
         $clientUserOwnerId = Capsule::table('tblusers_clients')
             ->where('client_id', $client->id)
@@ -158,24 +204,18 @@ final class PasswordResetService
             return [];
         }
 
-        $thirtyMinutesAgo = (new DateTime())->modify('-30 minutes');
+        // Reusa o token se ainda válido; senão gera um novo (o módulo controla o token).
+        $this->ensureResetToken($user);
 
-        $userResetToken       = $user->reset_token;
-        $userResetTokenExpiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
-
-        if (!$userResetTokenExpiry || $userResetTokenExpiry < new DateTime()) {
-            /** @var array{email: string} $output */
-            $output         = localAPI('ResetPassword', ['email' => $user->email]);
-            $userResetToken = Capsule::table('tblusers')->where('email', $output['email'])->value('reset_token');
-        }
+        $resetUrl  = get_passsword_reset_url_for_user($user->email);
+        $emailSent = $this->sendEmail($client->id, $resetUrl);
 
         /** @var array{sent_to_email: string, sent_to_phone: string} $result */
         $result = [];
 
-        $sendEmailResult = $this->sendEmail($client->id, $client->email);
-
-        if ($sendEmailResult) {
-            $result['sent_to_email'] = lkn_hn_mask_value($client->email);
+        if ($emailSent) {
+            // O email vai para o usuário proprietário (não o email do perfil do cliente).
+            $result['sent_to_email'] = lkn_hn_mask_value($user->email);
         }
 
         $sendWhatsAppNotificationResult = $this->sendWhatsAppNotification(
@@ -193,6 +233,28 @@ final class PasswordResetService
         }
 
         return $result;
+    }
+
+    /**
+     * Gera um novo token de reset apenas se o atual estiver ausente/expirado,
+     * reaproveitando links ainda válidos (evita loop de reset). O módulo controla
+     * a geração do token — não delega ao WHMCS/localAPI.
+     *
+     * @param object{id: int, reset_token_expiry: string} $user
+     */
+    private function ensureResetToken(object $user): void
+    {
+        $expiry = $user->reset_token_expiry ? new DateTime($user->reset_token_expiry) : null;
+
+        if ($expiry && $expiry >= new DateTime()) {
+            // Token ainda válido: reaproveita.
+            return;
+        }
+
+        Capsule::table('tblusers')->where('id', $user->id)->update([
+            'reset_token'        => bin2hex(random_bytes(32)),
+            'reset_token_expiry' => (new DateTime())->modify('+2 hours')->format('Y-m-d H:i:s'),
+        ]);
     }
 
     private function sendWhatsAppNotification(
