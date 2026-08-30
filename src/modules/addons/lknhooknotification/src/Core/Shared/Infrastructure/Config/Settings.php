@@ -53,7 +53,11 @@ enum Settings: string
     case LKN_LICENSE                       = 'lkn_license';
     case DEFAULT_CLIENT_NAME               = 'default_client_name';
     case LATEST_VERSION                    = 'latest_version';
+    case LATEST_VERSION_BODY               = 'latest_version_body';
+    case LATEST_VERSION_DATE               = 'latest_version_date';
     case NEW_VERSION_DISMISS_ON_ADMIN_HOME = 'new_version_dismiss_on_admin_home';
+    case NEW_VERSION_DISMISSED             = 'new_version_dismissed';
+    case LAST_VERSION_CHECK                = 'last_version_check';
     case DISMISS_INSTALLATION_WELCOME      = 'dismiss_installation_welcome';
     case OBJECT_PAGES_TO_SHOW_REPORTS      = 'object_pages_to_show_reports';
     case MODULE_PREVIOUS_VERSION           = 'mod_previous_version';

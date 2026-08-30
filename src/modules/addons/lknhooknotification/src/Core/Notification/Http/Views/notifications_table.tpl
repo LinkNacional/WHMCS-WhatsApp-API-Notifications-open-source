@@ -29,14 +29,6 @@
                     {lkn_hn_lang text="You have to keep only three notifications configured to be able to use the module."}
                 {/if}
             </p>
-            <a
-                class="btn btn-success"
-                href="https://cliente.linknacional.com.br/solicitar/whmcs-notificacao-whatsapp"
-                target="_blank"
-            >
-                <i class="far fa-plus"></i>
-                {lkn_hn_lang text="Get paid plan now for more notifications!"}
-            </a>
         </div>
     {/if}
 

@@ -2,6 +2,7 @@
 
 namespace Lkn\HookNotification\Core\AdminUI\Http\Controllers;
 
+use Lkn\HookNotification\Core\AdminUI\Application\Services\GitHubReleaseService;
 use Lkn\HookNotification\Core\AdminUI\Application\Services\LicenseService;
 use Lkn\HookNotification\Core\AdminUI\Application\Services\VersionUpgradeWarningService;
 use Lkn\HookNotification\Core\NotificationReport\Application\NotificationReportService;
@@ -83,13 +84,19 @@ final class HomepageController extends BaseController
 
     public function newVersion(): ?string
     {
-        if (isset($_GET['new-version-dismiss-on-admin-home'])) {
-            VersionUpgradeWarningService::setDismissOnAdminHome(true);
+        $newVersion = VersionUpgradeWarningService::getNewVersion();
+
+        if ($newVersion === null || $newVersion === '') {
+            return null;
         }
 
-        $mustDismissAlert = VersionUpgradeWarningService::getDismissNewVersionAlert();
+        // Dismiss grava a versão atual (não bool global).
+        if (isset($_GET['new-version-dismiss-on-admin-home'])) {
+            VersionUpgradeWarningService::setDismissedVersion($newVersion);
+        }
 
-        if ($mustDismissAlert) {
+        // Não mostra se esta versão já foi dispensada.
+        if (VersionUpgradeWarningService::getDismissedVersion() === $newVersion) {
             return null;
         }
 
@@ -100,14 +107,16 @@ final class HomepageController extends BaseController
             return null;
         }
 
-        $newVersion = VersionUpgradeWarningService::getNewVersion();
-
         $currentVersion = ModuleInfo::VERSION;
 
         if (version_compare($newVersion, $currentVersion, '>')) {
             return $this->view->view(
                 'components/new_version_pop_up',
-                ['new_version' => $newVersion]
+                [
+                    'new_version'      => $newVersion,
+                    'new_version_body' => VersionUpgradeWarningService::getLatestVersionBody(),
+                    'new_version_date' => VersionUpgradeWarningService::getLatestVersionDate(),
+                ]
             )->render();
         }
 
@@ -116,7 +125,14 @@ final class HomepageController extends BaseController
 
     public function handleNewVersionCheck(): void
     {
-        return;
+        $lastCheck = VersionUpgradeWarningService::getLastVersionCheck();
+
+        // Throttle: consulta o GitHub no máximo 1x por dia.
+        if ($lastCheck !== null && (time() - $lastCheck) < 86400) {
+            return;
+        }
+
+        (new GitHubReleaseService())->checkLatestRelease();
     }
 
     /**
