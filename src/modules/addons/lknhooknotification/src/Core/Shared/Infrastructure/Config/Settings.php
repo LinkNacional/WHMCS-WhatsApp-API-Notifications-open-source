@@ -70,7 +70,7 @@ enum Settings: string
 
     case LOGIN_OTP_EXPIRY_MINUTES       = 'login_otp_expiry_minutes';
     case LOGIN_MAGIC_LINK_ENABLED       = 'login_magic_link_enabled';
-    case LOGIN_OTP_MAX_SENDS_PER_PHONE  = 'login_otp_max_sends_per_phone';
+    case LOGIN_OTP_MAX_SENDS_PER_PHONE  = 'login_otp_max_sends';
     case LOGIN_OTP_SENDS_WINDOW_MINUTES = 'login_otp_sends_window_minutes';
     case LOGIN_OTP_MAX_ATTEMPTS         = 'login_otp_max_attempts';
     case LOGIN_OTP_COOLDOWN_MINUTES     = 'login_otp_cooldown_minutes';

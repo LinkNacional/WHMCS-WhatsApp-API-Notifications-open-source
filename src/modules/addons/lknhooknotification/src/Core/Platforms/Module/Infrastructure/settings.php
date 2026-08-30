@@ -101,7 +101,7 @@ return [
         'setting' => Settings::LOGIN_OTP_MAX_SENDS_PER_PHONE,
         'label' => lkn_hn_lang('Max OTP sends per phone'),
         'description' => lkn_hn_lang('Maximum OTP sends per phone within the window (default 3).'),
-        'type' => 'text',
+        'type' => 'number',
     ],
     [
         'setting' => Settings::LOGIN_OTP_SENDS_WINDOW_MINUTES,

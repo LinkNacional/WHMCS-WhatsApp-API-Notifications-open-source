@@ -100,19 +100,9 @@ final class ClientRepository extends BaseRepository
 
         $matches = [];
 
-        // 1. Campo de telefone do WHMCS (tblclients.phonenumber).
-        $byWhmcsPhone = $this->query->table('tblclients')
-            ->select(['id', 'email', 'phonenumber'])
-            ->get()
-            ->filter(function ($client) use ($normalized): bool {
-                return preg_replace('/[^0-9]/', '', (string) ($client->phonenumber ?? '')) === $normalized;
-            });
-
-        foreach ($byWhmcsPhone as $client) {
-            $matches[(int) $client->id] = $client;
-        }
-
-        // 2. Campo personalizado de WhatsApp (tblcustomfieldsvalues) pelo CF configurado.
+        // Usa UMA única fonte (nunca as duas): o campo personalizado de WhatsApp
+        // configurado no módulo, ou — se não configurado — o campo de telefone
+        // padrão do WHMCS. Espelha Client::getWpPhoneNumberOrWhmcsPhoneNumber.
         $wpCustomFieldId = lkn_hn_config(Settings::WP_CUSTOM_FIELD_ID);
 
         if ($wpCustomFieldId) {
@@ -127,10 +117,6 @@ final class ClientRepository extends BaseRepository
             foreach ($byCustomField as $row) {
                 $clientId = (int) $row->relid;
 
-                if (isset($matches[$clientId])) {
-                    continue;
-                }
-
                 $client = $this->query->table('tblclients')
                     ->where('id', $clientId)
                     ->select(['id', 'email', 'phonenumber'])
@@ -139,6 +125,18 @@ final class ClientRepository extends BaseRepository
                 if ($client) {
                     $matches[$clientId] = $client;
                 }
+            }
+        } else {
+            // Campo de telefone do WHMCS (tblclients.phonenumber).
+            $byWhmcsPhone = $this->query->table('tblclients')
+                ->select(['id', 'email', 'phonenumber'])
+                ->get()
+                ->filter(function ($client) use ($normalized): bool {
+                    return preg_replace('/[^0-9]/', '', (string) ($client->phonenumber ?? '')) === $normalized;
+                });
+
+            foreach ($byWhmcsPhone as $client) {
+                $matches[(int) $client->id] = $client;
             }
         }
 
