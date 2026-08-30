@@ -19,7 +19,11 @@
         const COOKIE_DAYS = 30;
         const API_BASE = '/modules/addons/lknhooknotification/src/Core/api.php';
 
-        const loginForm = document.querySelector('form[action*="dologin"]');
+        // Form de login: WHMCS usa `dologin.php`, mas temas customizados podem usar
+        // `/login` ou outro action. Fallback robusto: form com input[name="username"].
+        const loginForm = Array.from(document.querySelectorAll('form')).find((f) => f.querySelector('input[name="username"]'))
+            || document.querySelector('form[action*="dologin"]')
+            || null;
         if (!loginForm) {
             return;
         }
@@ -28,10 +32,14 @@
         const tokenInput = loginForm.querySelector('input[name="token"], input[name="csrftoken"]');
         const csrfToken = (tokenInput && tokenInput.value) || injectedToken;
 
-        // Botão do Google (OAuth2) — best-effort, tema-agnóstico.
-        const googleEl = Array.from(document.querySelectorAll('a, button')).find((el) =>
-            /google/i.test(el.getAttribute('href') || '') || /google/i.test(el.textContent || '')
-        ) || null;
+        // Botão do Google (OAuth2) — best-effort, tema-agnóstico. Cobre o container
+        // #login-social e classes btn-google/#btnGoogleSignin1 de temas customizados.
+        const googleEl = document.querySelector('#login-social')
+            || document.querySelector('.btn-google, [class*="btn-google"], #btnGoogleSignin1')
+            || Array.from(document.querySelectorAll('a, button')).find((el) =>
+                /google/i.test(el.getAttribute('href') || '') || /google/i.test(el.textContent || '')
+            )
+            || null;
 
         function setCookie(name, value, days) {
             const d = new Date();
