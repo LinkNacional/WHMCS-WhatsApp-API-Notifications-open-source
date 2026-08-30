@@ -58,13 +58,10 @@
             const style = document.createElement('style');
             style.id = 'lkn-login-otp-style';
             style.textContent = `
-                #lkn-login-chooser, #lkn-login-whatsapp { margin: 0 auto 20px; max-width: 400px; }
-                #lkn-login-chooser { text-align: center; }
-                #lkn-login-chooser .lkn-login-chooser-title { margin-bottom: 18px; font-weight: 600; font-size: 1.05rem; }
-                #lkn-login-chooser .lkn-login-method { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 12px; padding: 10px 14px; }
-                .lkn-login-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 14px; padding: 0; border: none; background: none; color: #007bff; cursor: pointer; font-size: 0.95rem; }
+                .lkn-login-back { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; padding: 0; border: none; background: none; color: #007bff; cursor: pointer; font-size: 0.95rem; }
                 .lkn-login-back:hover { text-decoration: underline; color: #0056b3; }
-                #lkn-login-whatsapp { text-align: left; }
+                .lkn-login-chooser-hint { margin-bottom: 14px; }
+                .lkn-login-method { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; }
                 #lkn-login-whatsapp label { font-weight: 500; }
                 #lkn-login-whatsapp input { margin-bottom: 12px; }
                 #lkn-login-whatsapp .lkn-login-msg { margin: 10px 0; font-size: 0.9em; color: #666; }
@@ -98,7 +95,50 @@
             el.classList.toggle('lkn-login-error', !!isError);
         }
 
+        // Constrói um card com o mesmo visual do form de e-mail: clona o header
+        // (título + subtítulo) e o footer (cadastro + esqueceu a senha) do form original.
+        function buildCard() {
+            const srcCard = loginForm.querySelector('.card');
+            const srcBody = loginForm.querySelector('.card-body');
+            const srcHeader = loginForm.querySelector('.card-body .mb-4');
+            const srcFooter = loginForm.querySelector('.card-footer');
+            const srcReset = loginForm.querySelector('a[href*="password/reset"], a[href*="/password/reset"]');
+
+            const card = document.createElement('div');
+            card.className = srcCard ? srcCard.className : 'card mw-540 mb-md-4 mt-md-4';
+
+            const body = document.createElement('div');
+            body.className = srcBody ? srcBody.className : 'card-body px-sm-5 py-5';
+
+            if (srcHeader) {
+                body.appendChild(srcHeader.cloneNode(true));
+            }
+
+            card.appendChild(body);
+
+            if (srcFooter) {
+                const footer = srcFooter.cloneNode(true);
+                if (srcReset) {
+                    const sep = document.createElement('span');
+                    sep.textContent = ' · ';
+                    footer.appendChild(sep);
+                    footer.appendChild(srcReset.cloneNode(true));
+                }
+                card.appendChild(footer);
+            }
+
+            return { card, body };
+        }
+
+        let activeCard = null;
         let backBtn = null;
+
+        function clearActiveCard() {
+            if (activeCard) {
+                activeCard.remove();
+                activeCard = null;
+            }
+        }
 
         function removeBackButton() {
             if (backBtn) {
@@ -123,16 +163,20 @@
         function goBack() {
             deleteCookie(COOKIE_NAME);
             removeBackButton();
+            clearActiveCard();
             hideEmailForm();
             hideGoogle();
-            removeWhatsApp();
             renderChooser();
         }
 
         function renderChooser() {
-            const chooser = document.createElement('div');
-            chooser.id = 'lkn-login-chooser';
-            chooser.innerHTML = '<div class="lkn-login-chooser-title">' + t('login_otp_choose_method') + '</div>';
+            clearActiveCard();
+            const { card, body } = buildCard();
+
+            const hint = document.createElement('p');
+            hint.className = 'text-muted lkn-login-chooser-hint';
+            hint.textContent = t('login_otp_choose_method');
+            body.appendChild(hint);
 
             [
                 ['email', '<i class="fas fa-envelope"></i> ' + t('login_otp_email'), 'btn-primary'],
@@ -144,16 +188,17 @@
                 }
                 const b = document.createElement('button');
                 b.type = 'button';
-                b.className = 'btn ' + cls + ' lkn-login-method';
+                b.className = 'btn ' + cls + ' btn-block lkn-login-method';
                 b.innerHTML = labelHtml;
                 b.addEventListener('click', () => {
                     setCookie(COOKIE_NAME, method, COOKIE_DAYS);
                     showMethod(method);
                 });
-                chooser.appendChild(b);
+                body.appendChild(b);
             });
 
-            loginForm.parentNode.insertBefore(chooser, loginForm);
+            activeCard = card;
+            loginForm.parentNode.insertBefore(card, loginForm);
         }
 
         function hideEmailForm() {
@@ -169,16 +214,24 @@
             if (googleEl) googleEl.style.display = '';
         }
 
-        function removeWhatsApp() {
-            const el = document.getElementById('lkn-login-whatsapp');
-            if (el) el.remove();
+        async function post(endpoint, params) {
+            const qs = new URLSearchParams(params || {}).toString();
+            const url = API_BASE + '?endpoint=' + endpoint + (qs ? '&' + qs : '');
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ token: csrfToken }),
+            });
+            return res.json();
         }
 
         function showWhatsApp() {
-            removeWhatsApp();
-            const box = document.createElement('div');
-            box.id = 'lkn-login-whatsapp';
-            box.innerHTML = `
+            clearActiveCard();
+            const { card, body } = buildCard();
+
+            const fields = document.createElement('div');
+            fields.id = 'lkn-login-whatsapp';
+            fields.innerHTML = `
                 <label for="lkn-login-phone">${t('login_otp_phone_label')}</label>
                 <input type="tel" id="lkn-login-phone" class="form-control" autocomplete="tel" placeholder="+5511999999999">
                 <button type="button" id="lkn-login-send" class="btn btn-primary btn-block">${t('login_otp_send_code')}</button>
@@ -190,24 +243,18 @@
                 </div>
                 <div id="lkn-login-accounts"></div>
             `;
-            loginForm.parentNode.insertBefore(box, loginForm.nextSibling);
+            body.appendChild(fields);
 
-            const phoneInput = box.querySelector('#lkn-login-phone');
-            const sendBtn = box.querySelector('#lkn-login-send');
-            const otpWrap = box.querySelector('#lkn-login-otp-wrap');
-            const otpInput = box.querySelector('#lkn-login-otp');
-            const verifyBtn = box.querySelector('#lkn-login-verify');
-            const msg = box.querySelector('#lkn-login-msg');
-            const accounts = box.querySelector('#lkn-login-accounts');
+            activeCard = card;
+            loginForm.parentNode.insertBefore(card, loginForm);
 
-            async function post(endpoint, query) {
-                const res = await fetch(API_BASE + '?endpoint=' + endpoint + query, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ token: csrfToken }),
-                });
-                return res.json();
-            }
+            const phoneInput = fields.querySelector('#lkn-login-phone');
+            const sendBtn = fields.querySelector('#lkn-login-send');
+            const otpWrap = fields.querySelector('#lkn-login-otp-wrap');
+            const otpInput = fields.querySelector('#lkn-login-otp');
+            const verifyBtn = fields.querySelector('#lkn-login-verify');
+            const msg = fields.querySelector('#lkn-login-msg');
+            const accounts = fields.querySelector('#lkn-login-accounts');
 
             function errorText(code) {
                 return translations['login_otp_error_' + code] || t('login_otp_generic_error');
@@ -221,7 +268,7 @@
                 }
                 withLoading(sendBtn, async () => {
                     try {
-                        await post('login/otp/send', '?phone=' + encodeURIComponent(phone));
+                        await post('login/otp/send', { phone: phone });
                         setMsg(msg, t('login_otp_sent_hint'), false);
                         otpWrap.style.display = '';
                         otpInput.focus();
@@ -230,11 +277,6 @@
                     }
                 });
             });
-
-            async function verify(phone, otp, clientId) {
-                const q = '?phone=' + encodeURIComponent(phone) + '&otp=' + encodeURIComponent(otp) + (clientId ? '&client_id=' + encodeURIComponent(clientId) : '');
-                return post('login/otp/verify', q);
-            }
 
             function handleVerifyResult(res) {
                 if (res && res.logged_in && res.redirect_url) {
@@ -246,6 +288,14 @@
                     return;
                 }
                 setMsg(msg, errorText((res && res.error) || ''), true);
+            }
+
+            function verify(phone, otp, clientId) {
+                const params = { phone: phone, otp: otp };
+                if (clientId) {
+                    params.client_id = String(clientId);
+                }
+                return post('login/otp/verify', params);
             }
 
             verifyBtn.addEventListener('click', () => {
@@ -290,11 +340,9 @@
         }
 
         function showMethod(method) {
-            const chooser = document.getElementById('lkn-login-chooser');
-            if (chooser) chooser.remove();
+            clearActiveCard();
             hideEmailForm();
             hideGoogle();
-            removeWhatsApp();
             ensureBackButton();
 
             if (method === 'email') {

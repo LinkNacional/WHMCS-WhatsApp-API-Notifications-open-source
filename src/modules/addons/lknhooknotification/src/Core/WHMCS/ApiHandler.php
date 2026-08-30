@@ -40,6 +40,18 @@ final class ApiHandler extends Singleton {
         /** @var array<string, string> $queryParams */
         parse_str($urlParts['query'] ?? '', $queryParams);
 
+        // Aceita também parâmetros top-level (?endpoint=...&phone=...&otp=...): o `&`
+        // separa os params do endpoint na query string — necessário p/ verify (2+ params).
+        foreach ($_GET as $key => $value) {
+            if ($key === 'endpoint') {
+                continue;
+            }
+
+            if (!array_key_exists($key, $queryParams)) {
+                $queryParams[$key] = $value;
+            }
+        }
+
         $match = $this->extractRouteParams($path);
 
 
