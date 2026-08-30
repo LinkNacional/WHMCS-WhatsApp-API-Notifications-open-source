@@ -5,6 +5,7 @@ namespace Lkn\HookNotification\Core\WHMCS;
 use DateTime;
 use Lkn\HookNotification\Core\Notification\Application\NotificationFactory;
 use Lkn\HookNotification\Core\Notification\Application\Services\NotificationSender;
+use Lkn\HookNotification\Core\Notification\Application\Services\NotificationService;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Repository\ClientRepository;
 use WHMCS\Database\Capsule;
@@ -18,12 +19,14 @@ final class LoginOtpService
 {
     private readonly NotificationFactory $notificationFactory;
     private readonly NotificationSender $notificationSender;
+    private readonly NotificationService $notificationService;
     private readonly ClientRepository $clientRepository;
 
     public function __construct()
     {
         $this->notificationFactory = NotificationFactory::getInstance();
         $this->notificationSender  = NotificationSender::getInstance();
+        $this->notificationService = new NotificationService();
         $this->clientRepository    = new ClientRepository();
     }
 
@@ -34,6 +37,11 @@ final class LoginOtpService
      */
     public function send(string $phone): array
     {
+        // Respeita o toggle da notificação "Login OTP" (mesmo padrão do SafePasswordReset).
+        if (!$this->notificationService->isNotificationEnabled('LoginOtp')) {
+            return $this->neutralResponse();
+        }
+
         $phone = $this->normalizePhone($phone);
 
         if ($phone === '') {
@@ -44,6 +52,11 @@ final class LoginOtpService
 
         // Anti-enumeração: não revela se o telefone existe ou não.
         if (count($clients) === 0) {
+            return $this->neutralResponse();
+        }
+
+        // Bloqueio ativo (LOGIN_OTP_BLOCK_MINUTES) => não envia.
+        if ($this->isBlocked($phone)) {
             return $this->neutralResponse();
         }
 
@@ -67,6 +80,11 @@ final class LoginOtpService
             'created_at'     => (new DateTime())->format('Y-m-d H:i:s'),
         ]);
 
+        // Ao atingir o limite de envios na janela, aplica o bloqueio temporal.
+        if ($this->hasReachedMaxSends($phone)) {
+            $this->setBlock($phone);
+        }
+
         $this->sendOtpNotification((int) $clients[0]->id, $otp, $expiryMinutes);
 
         return $this->neutralResponse();
@@ -86,6 +104,11 @@ final class LoginOtpService
 
         if ($phone === '' || $otp === '') {
             return ['error' => 'invalid_input'];
+        }
+
+        // Bloqueio ativo (LOGIN_OTP_BLOCK_MINUTES) => bloqueia o acesso WhatsApp.
+        if ($this->isBlocked($phone)) {
+            return ['error' => 'blocked'];
         }
 
         $record = Capsule::table('mod_lkn_hook_notification_login_otp')
@@ -114,6 +137,11 @@ final class LoginOtpService
 
             if (!password_verify($otp, $record->otp_hash)) {
                 Capsule::table('mod_lkn_hook_notification_login_otp')->where('id', $record->id)->increment('attempts');
+
+                // Ao esgotar as tentativas, aplica o bloqueio temporal.
+                if (((int) $record->attempts + 1) >= $maxAttempts) {
+                    $this->setBlock($phone);
+                }
 
                 return ['error' => 'invalid_otp'];
             }
@@ -232,6 +260,55 @@ final class LoginOtpService
         }
 
         return true;
+    }
+
+    /**
+     * Indica se o telefone está temporariamente bloqueado (LOGIN_OTP_BLOCK_MINUTES).
+     */
+    private function isBlocked(string $phone): bool
+    {
+        return Capsule::table('mod_lkn_hook_notification_login_otp')
+            ->where('phone', $phone)
+            ->whereNotNull('blocked_until')
+            ->where('blocked_until', '>', (new DateTime())->format('Y-m-d H:i:s'))
+            ->exists();
+    }
+
+    /**
+     * Aplica o bloqueio temporal ao telefone (marca blocked_until no registro mais recente).
+     */
+    private function setBlock(string $phone): void
+    {
+        $blockMinutes = max(1, (int) (lkn_hn_config(Settings::LOGIN_OTP_BLOCK_MINUTES) ?? 30));
+        $blockedUntil = (new DateTime())->modify("+{$blockMinutes} minutes")->format('Y-m-d H:i:s');
+
+        $latest = Capsule::table('mod_lkn_hook_notification_login_otp')
+            ->where('phone', $phone)
+            ->orderBy('id', 'desc')
+            ->first('id');
+
+        if ($latest) {
+            Capsule::table('mod_lkn_hook_notification_login_otp')
+                ->where('id', $latest->id)
+                ->update(['blocked_until' => $blockedUntil]);
+        }
+    }
+
+    /**
+     * Indica se o telefone atingiu o máximo de envios dentro da janela.
+     */
+    private function hasReachedMaxSends(string $phone): bool
+    {
+        $windowMinutes = max(1, (int) (lkn_hn_config(Settings::LOGIN_OTP_SENDS_WINDOW_MINUTES) ?? 30));
+        $maxSends      = max(1, (int) (lkn_hn_config(Settings::LOGIN_OTP_MAX_SENDS_PER_PHONE) ?? 3));
+        $windowStart   = (new DateTime())->modify("-{$windowMinutes} minutes")->format('Y-m-d H:i:s');
+
+        $phoneSends = Capsule::table('mod_lkn_hook_notification_login_otp')
+            ->where('phone', $phone)
+            ->where('created_at', '>=', $windowStart)
+            ->count();
+
+        return $phoneSends >= $maxSends;
     }
 
     private function sendOtpNotification(int $clientId, string $otp, int $expiryMinutes): void

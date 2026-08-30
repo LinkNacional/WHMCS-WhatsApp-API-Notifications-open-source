@@ -116,6 +116,7 @@ final class DatabaseSetup
                     client_id INT NULL,
                     otp_hash VARCHAR(255) NULL,
                     otp_expires_at DATETIME NULL,
+                    blocked_until DATETIME NULL,
                     attempts INT DEFAULT 0,
                     ip VARCHAR(45) NOT NULL,
                     status VARCHAR(20) NOT NULL DEFAULT \'pending\',

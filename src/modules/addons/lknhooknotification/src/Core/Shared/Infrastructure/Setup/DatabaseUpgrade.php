@@ -594,4 +594,20 @@ final class DatabaseUpgrade
             lkn_hn_log('Database 4.6.0 upgrade failed', null, $th->__toString());
         }
     }
+
+    // Login OTP: coluna blocked_until (bloqueio temporal por telefone).
+    public static function v461(): void
+    {
+        try {
+            if (!Capsule::schema()->hasColumn('mod_lkn_hook_notification_login_otp', 'blocked_until')) {
+                Capsule::schema()->table('mod_lkn_hook_notification_login_otp', function ($table): void {
+                    $table->dateTime('blocked_until')->nullable();
+                });
+            }
+
+            lkn_hn_log('Database 4.6.1 success', null, ['login_otp_block' => true]);
+        } catch (Throwable $th) {
+            lkn_hn_log('Database 4.6.1 upgrade failed', null, $th->__toString());
+        }
+    }
 }
