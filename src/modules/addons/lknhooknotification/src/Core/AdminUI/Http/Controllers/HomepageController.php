@@ -5,6 +5,7 @@ namespace Lkn\HookNotification\Core\AdminUI\Http\Controllers;
 use Lkn\HookNotification\Core\AdminUI\Application\Services\LicenseService;
 use Lkn\HookNotification\Core\AdminUI\Application\Services\VersionUpgradeWarningService;
 use Lkn\HookNotification\Core\NotificationReport\Application\NotificationReportService;
+use Lkn\HookNotification\Core\Shared\Infrastructure\Config\ModuleInfo;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Platforms;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Interfaces\BaseController;
@@ -101,7 +102,7 @@ final class HomepageController extends BaseController
 
         $newVersion = VersionUpgradeWarningService::getNewVersion();
 
-        $currentVersion = '4.3.3'; // CHANGE MANUALLY ON RELEASE
+        $currentVersion = ModuleInfo::VERSION;
 
         if (version_compare($newVersion, $currentVersion, '>')) {
             return $this->view->view(

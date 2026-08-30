@@ -1,44 +1,120 @@
 name: Generate notifications release
+
 on:
   pull_request:
     types: [closed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão manual (ex.: 4.6.1). Vazio = ler do código'
+        required: false
+        type: string
+      allow_existing_tag:
+        description: 'Re-gerar mesmo se a tag já existir (re-run/correção)'
+        required: false
+        type: boolean
+        default: false
+
 env:
   RELEASE_NAME: notifications
-  WORK_DIR: src
+  MODULE_SRC: src/modules/addons/lknhooknotification
 
 jobs:
-  encode-build:
+  build-release:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install Composer dependencies
-        working-directory: ${{ env.WORK_DIR }}/modules/addons/lknhooknotification
-        run: composer install --ignore-platform-reqs --no-cache
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
 
-      - name: Generate release .zip
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -oP "(?<=const VERSION = ')[0-9]+\.[0-9]+\.[0-9]+" \
+              "$MODULE_SRC/src/Core/Shared/Infrastructure/Config/ModuleInfo.php" | head -1)
+          fi
+          echo "version=$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check tag
+        id: check_tag
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.version.outputs.version }}" | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if tag exists without allow_existing_tag
+        if: steps.check_tag.outputs.exists == 'true' && github.event.inputs.allow_existing_tag != 'true'
+        run: |
+          echo "::error::Tag v${{ steps.version.outputs.version }} já existe. \
+          Bumpeie ModuleInfo::VERSION no código antes do merge (ou use workflow_dispatch com allow_existing_tag=true)."
+          exit 1
+
+      - name: Clean existing draft/tag (re-run mode)
+        if: steps.check_tag.outputs.exists == 'true' && github.event.inputs.allow_existing_tag == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "v${{ steps.version.outputs.version }}" --yes --cleanup-tag || true
+
+      - name: Install production dependencies
+        if: steps.check_tag.outputs.exists == 'false' || github.event.inputs.allow_existing_tag == 'true'
+        working-directory: ${{ env.MODULE_SRC }}
+        run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --ignore-platform-reqs
+
+      - name: Stage module folder
+        if: steps.check_tag.outputs.exists == 'false' || github.event.inputs.allow_existing_tag == 'true'
+        run: |
+          mkdir -p dist
+          cp -a "$MODULE_SRC" dist/lknhooknotification
+          rm -rf dist/lknhooknotification/.git \
+                 dist/lknhooknotification/.github \
+                 dist/lknhooknotification/composer-cache \
+                 dist/lknhooknotification/composer-data \
+                 dist/lknhooknotification/composer-archive \
+                 dist/lknhooknotification/tests \
+                 dist/lknhooknotification/docs \
+                 dist/lknhooknotification/stubs.php \
+                 dist/lknhooknotification/.php-cs-fixer.cache \
+                 dist/lknhooknotification/.DS_Store
+
+      - name: Validate autoload and syntax
+        if: steps.check_tag.outputs.exists == 'false' || github.event.inputs.allow_existing_tag == 'true'
+        working-directory: dist/lknhooknotification
+        run: |
+          php -r "require 'vendor/autoload.php'; echo 'autoload OK';"
+          php -l lknhooknotification.php
+
+      - name: Create zip
+        if: steps.check_tag.outputs.exists == 'false' || github.event.inputs.allow_existing_tag == 'true'
         uses: thedoctor0/zip-release@master
         with:
-          type: "zip"
-          path: "."  # Zipar os arquivos diretamente da pasta WORK_DIR
-          directory: ${{ env.WORK_DIR }}
+          type: zip
+          path: lknhooknotification
+          directory: dist
           filename: ${{ env.RELEASE_NAME }}.zip
-          exclusions: "*.git* .github"
+          exclusions: "*.git* .github composer-cache composer-data composer-archive"
 
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Finish release
+      - name: Create draft release
+        if: steps.check_tag.outputs.exists == 'false' || github.event.inputs.allow_existing_tag == 'true'
         uses: ncipollo/release-action@v1
         with:
-          artifacts: ${{env.WORK_DIR}}/${{ env.RELEASE_NAME }}.zip
+          artifacts: dist/${{ env.RELEASE_NAME }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit: "main"
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          tag: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          commit: main
+          draft: true
+          generateReleaseNotes: true
+          skipIfReleaseExists: true
