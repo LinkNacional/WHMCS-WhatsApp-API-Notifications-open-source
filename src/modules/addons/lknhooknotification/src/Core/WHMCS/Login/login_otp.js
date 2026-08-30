@@ -151,9 +151,11 @@
                 const footer = srcFooter.cloneNode(true);
                 if (srcReset) {
                     const sep = document.createElement('span');
-                    sep.textContent = ' · ';
+                    sep.textContent = ' | ';
                     footer.appendChild(sep);
-                    footer.appendChild(srcReset.cloneNode(true));
+                    const reset = srcReset.cloneNode(true);
+                    reset.className = 'small font-weight-bold';
+                    footer.appendChild(reset);
                 }
                 card.appendChild(footer);
             }
@@ -173,12 +175,15 @@
             }
             const wrap = document.createElement('div');
             wrap.className = 'lkn-login-back-wrap';
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-sm lkn-login-back';
-            btn.textContent = t('login_otp_back');
-            btn.addEventListener('click', goBack);
-            wrap.appendChild(btn);
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'small font-weight-bold';
+            link.textContent = t('login_otp_back');
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                goBack();
+            });
+            wrap.appendChild(link);
             footer.appendChild(wrap);
         }
 
