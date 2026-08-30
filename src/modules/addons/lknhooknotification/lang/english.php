@@ -134,4 +134,5 @@ $_ADDONLANG['client_tickets_url'] = 'Client Tickets URL';
 $_ADDONLANG['client_invoices_url'] = 'Client Invoices URL';
 $_ADDONLANG['BirthdayClientNotification'] = 'Birthday Client';
 $_ADDONLANG['UserLoginNotification'] = 'User Login Notification';
+$_ADDONLANG['LoginOtp'] = 'WhatsApp Login (OTP)';
 $_ADDONLANG['If an account with this email exists, we have sent the reset instructions.'] = 'If an account with this email exists, we have sent the reset instructions.';

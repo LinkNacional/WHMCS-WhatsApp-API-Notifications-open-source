@@ -439,6 +439,7 @@ $_ADDONLANG['Try again'] = 'Tentar novamente';
 $_ADDONLANG['Sent to WhatsApp and email:'] = 'Enviado para WhatsApp e email:';
 $_ADDONLANG['You have reached the maximum limit of requests. Check your email inbox or SPAM folder or the WhatsApp registered in your profile.'] = 'Você atingiu o limite máximo de solicitações. Verifique a caixa de entrada ou SPAM do seu e-mail ou o WhatsApp cadastrado no perfil.';
 $_ADDONLANG['SafePasswordReset'] = 'Redefinição de Senha Segura';
+$_ADDONLANG['LoginOtp'] = 'Login por WhatsApp (OTP)';
 $_ADDONLANG['Indicate for the notification what to put in the parameters of the message template created in Meta.'] = 'Indique para a notificação o que colocar nos parâmetros do modelo de mensagem criado no Meta.';
 $_ADDONLANG['Select a parameter'] = 'Selecione um parâmetro';
 $_ADDONLANG['Change message template'] = 'Trocar message template';

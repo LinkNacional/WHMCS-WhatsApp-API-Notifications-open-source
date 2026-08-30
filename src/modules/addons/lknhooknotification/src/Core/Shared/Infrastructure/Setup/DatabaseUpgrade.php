@@ -553,4 +553,45 @@ final class DatabaseUpgrade
             lkn_hn_log('Database 4.5.1 upgrade failed', null, $th->__toString());
         }
     }
+
+    // Login OTP: registra os pedidos de OTP/magic link (rate limit + verificação).
+    public static function v460(): void
+    {
+        try {
+            $pdo = Capsule::connection()->getPdo();
+            $pdo->beginTransaction();
+
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_login_otp (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    phone VARCHAR(32) NOT NULL,
+                    client_id INT NULL,
+                    otp_hash VARCHAR(255) NULL,
+                    otp_expires_at DATETIME NULL,
+                    attempts INT DEFAULT 0,
+                    ip VARCHAR(45) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT \'pending\',
+                    magic_token_hash VARCHAR(255) NULL,
+                    magic_expires_at DATETIME NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_ip_created (ip, created_at),
+                    INDEX idx_phone_created (phone, created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+            }
+
+            lkn_hn_log('Database 4.6.0 success', null, ['login_otp' => true]);
+        } catch (Throwable $th) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            lkn_hn_log('Database 4.6.0 upgrade failed', null, $th->__toString());
+        }
+    }
 }

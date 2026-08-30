@@ -17,6 +17,18 @@ final class ApiHandler extends Singleton {
                 PasswordResetService::class,
                 'run',
             ],
+            'login/otp/send' => [
+                LoginOtpService::class,
+                'send',
+            ],
+            'login/otp/verify' => [
+                LoginOtpService::class,
+                'verify',
+            ],
+            'login/magic-link/verify' => [
+                LoginOtpService::class,
+                'verifyMagicLink',
+            ],
         ];
     }
 

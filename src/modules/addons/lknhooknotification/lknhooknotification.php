@@ -23,7 +23,7 @@ function lknhooknotification_config()
         $language = 'english';
     }
 
-    $version = '4.5.1'; // CHANGE MANUALLY ON RELEASE
+    $version = '4.6.0'; // CHANGE MANUALLY ON RELEASE
 
     return [
         'name' => lkn_hn_lang('WhatsApp and Chatwoot'),
@@ -124,6 +124,10 @@ function lknhooknotification_upgrade($vars): void
 
     if (version_compare($currentlyInstalledVersion, '4.5.1', '<')) {
         DatabaseUpgrade::v451();
+    }
+
+    if (version_compare($currentlyInstalledVersion, '4.6.0', '<')) {
+        DatabaseUpgrade::v460();
     }
 
     (new Smarty())->clearAllCache();

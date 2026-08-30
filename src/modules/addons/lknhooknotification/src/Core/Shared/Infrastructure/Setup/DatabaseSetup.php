@@ -108,6 +108,31 @@ final class DatabaseSetup
 
             $statement->execute();
 
+            // Login OTP: registra os pedidos de OTP/magic link (rate limit + verificação).
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_login_otp (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    phone VARCHAR(32) NOT NULL,
+                    client_id INT NULL,
+                    otp_hash VARCHAR(255) NULL,
+                    otp_expires_at DATETIME NULL,
+                    attempts INT DEFAULT 0,
+                    ip VARCHAR(45) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT \'pending\',
+                    magic_token_hash VARCHAR(255) NULL,
+                    magic_expires_at DATETIME NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_ip_created (ip, created_at),
+                    INDEX idx_phone_created (phone, created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+            }
+
             if ($pdo->inTransaction()) {
                 $pdo->commit();
             }
