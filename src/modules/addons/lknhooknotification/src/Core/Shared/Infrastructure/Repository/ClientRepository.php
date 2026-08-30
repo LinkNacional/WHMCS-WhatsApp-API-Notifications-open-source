@@ -98,15 +98,50 @@ final class ClientRepository extends BaseRepository
             return [];
         }
 
-        $clients = $this->query->table('tblclients')
+        $matches = [];
+
+        // 1. Campo de telefone do WHMCS (tblclients.phonenumber).
+        $byWhmcsPhone = $this->query->table('tblclients')
             ->select(['id', 'email', 'phonenumber'])
             ->get()
             ->filter(function ($client) use ($normalized): bool {
                 return preg_replace('/[^0-9]/', '', (string) ($client->phonenumber ?? '')) === $normalized;
-            })
-            ->values()
-            ->all();
+            });
 
-        return $clients;
+        foreach ($byWhmcsPhone as $client) {
+            $matches[(int) $client->id] = $client;
+        }
+
+        // 2. Campo personalizado de WhatsApp (tblcustomfieldsvalues) pelo CF configurado.
+        $wpCustomFieldId = lkn_hn_config(Settings::WP_CUSTOM_FIELD_ID);
+
+        if ($wpCustomFieldId) {
+            $byCustomField = $this->query->table('tblcustomfieldsvalues')
+                ->where('fieldid', $wpCustomFieldId)
+                ->select(['relid', 'value'])
+                ->get()
+                ->filter(function ($row) use ($normalized): bool {
+                    return preg_replace('/[^0-9]/', '', (string) ($row->value ?? '')) === $normalized;
+                });
+
+            foreach ($byCustomField as $row) {
+                $clientId = (int) $row->relid;
+
+                if (isset($matches[$clientId])) {
+                    continue;
+                }
+
+                $client = $this->query->table('tblclients')
+                    ->where('id', $clientId)
+                    ->select(['id', 'email', 'phonenumber'])
+                    ->first();
+
+                if ($client) {
+                    $matches[$clientId] = $client;
+                }
+            }
+        }
+
+        return array_values($matches);
     }
 }

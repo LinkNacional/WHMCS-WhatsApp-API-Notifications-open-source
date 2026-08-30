@@ -281,7 +281,7 @@ final class MetaWhatsAppNotificationParser extends AbstractNotificationParser
                 $buttonComponent = [
                     'type' => 'button',
                     'sub_type' => $btnType,
-                    'index' => (string) ($btnIndex),
+                    'index' => (int) ($btnIndex),
                     'parameters' => $parsedButtonParams,
                 ];
 
