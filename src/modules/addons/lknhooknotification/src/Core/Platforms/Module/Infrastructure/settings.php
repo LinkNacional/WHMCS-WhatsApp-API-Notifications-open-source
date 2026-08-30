@@ -16,12 +16,6 @@ return [
         ],
     ],
     [
-        'setting' => Settings::LKN_LICENSE,
-        'label' => lkn_hn_lang('License'),
-        'description' => lkn_hn_lang('Link Nacional license to access premium module features.'),
-        'type' => 'password',
-    ],
-    [
         'setting' => Settings::DEFAULT_CLIENT_NAME,
         'label' => lkn_hn_lang('Default name for clients without filled names'),
         'description' => lkn_hn_lang('Platforms will use this name as a parameter if the client does not have a name filled in their WHMCS profile.'),

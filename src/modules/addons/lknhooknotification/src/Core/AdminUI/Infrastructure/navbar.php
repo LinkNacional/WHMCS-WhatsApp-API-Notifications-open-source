@@ -80,6 +80,12 @@ return [
             'icon' => 'far fa-question-circle',
             'items' => [
                 [
+                    'label' => lkn_hn_lang('Paid Support'),
+                    'url' => 'https://www.linknacional.com.br/hora-tecnica/',
+                    'external' => true,
+                    'icon' => 'fas fa-headset',
+                ],
+                [
                     'label' => lkn_hn_lang('Report Error'),
                     'url' => 'https://github.com/LinkNacional/whmcs-whatsapp-api-notifications-open-source/issues/new?assignees=&labels=bug%2C+help+wanted&projects=&template=bug_report.md&title=',
                     'external' => true,

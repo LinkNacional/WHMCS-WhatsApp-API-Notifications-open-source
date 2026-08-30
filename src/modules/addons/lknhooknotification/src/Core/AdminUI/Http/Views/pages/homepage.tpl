@@ -44,19 +44,6 @@
                             </p>
                         {/if}
                     </div>
-
-                    {if $page_params.license_status !== 'yes'}
-                        <div>
-                            <a
-                                class="btn btn-lg btn-success"
-                                href="https://cliente.linknacional.com.br/solicitar/whmcs-notificacao-whatsapp"
-                                target="_blank"
-                            >
-                                <i class="far fa-plus"></i>
-                                {lkn_hn_lang text="Get paid plan now for more notifications!"}
-                            </a>
-                        </div>
-                    {/if}
                 </div>
             </div>
         </div>
@@ -165,7 +152,7 @@
                             <ul class="nav nav-pills nav-stacked">
                                 <li role="presentation">
                                     <a
-                                        href="https://www.linknacional.com.br/whmcs/whatsapp/doc/#doc"
+                                        href="https://github.com/LinkNacional/WHMCS-WhatsApp-API-Notifications-open-source/wiki"
                                         target="_blank"
                                     >
                                         <i class="fas fa-cog"></i> {lkn_hn_lang text="How to setup the module?"}
