@@ -92,12 +92,6 @@ return [
         'type' => 'text',
     ],
     [
-        'setting' => Settings::LOGIN_MAGIC_LINK_ENABLED,
-        'label' => lkn_hn_lang('Enable magic link'),
-        'description' => lkn_hn_lang('Allow login via one-time magic link sent in the OTP message.'),
-        'type' => 'checkbox',
-    ],
-    [
         'setting' => Settings::LOGIN_OTP_MAX_SENDS_PER_PHONE,
         'label' => lkn_hn_lang('Max OTP sends per phone'),
         'description' => lkn_hn_lang('Maximum OTP sends per phone within the window (default 3).'),
