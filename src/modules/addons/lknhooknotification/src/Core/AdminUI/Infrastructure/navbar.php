@@ -1,6 +1,7 @@
 <?php
 
 use Lkn\HookNotification\Core\AdminUI\Application\Services\LicenseService;
+use Lkn\HookNotification\Core\Shared\Infrastructure\Config\ModuleInfo;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
 
 return [
@@ -91,7 +92,7 @@ return [
                 ],
                 [
                     'icon' => 'glyphicon glyphicon-download',
-                    'label' => 'v4.3.4',
+                    'label' => 'v' . ModuleInfo::VERSION,
                     'external' => true,
                     'url' => 'https://github.com/LinkNacional/whmcs-whatsapp-api-notifications-open-source/releases'
                 ]
