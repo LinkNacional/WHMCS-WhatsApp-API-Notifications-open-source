@@ -85,7 +85,7 @@ return [
     ],
     'order' => [
         'category' => NotificationReportCategory::ORDER,
-        'categoryIdFinder' => fn(): int => $this->whmcsHookParams['orderid'] ?? $this->whmcsHookParams['OrderID'],
+        'categoryIdFinder' => fn(): int => $this->whmcsHookParams['orderid'] ?? $this->whmcsHookParams['orderId'] ?? $this->whmcsHookParams['OrderID'],
         'clientIdFinder' => fn(): int => getClientIdByOrderId($this->categoryId),
         'params' => new NotificationParameterCollection([
             new NotificationParameter(

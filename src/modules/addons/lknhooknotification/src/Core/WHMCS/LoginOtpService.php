@@ -335,7 +335,7 @@ final class LoginOtpService
      */
     private function createLoginSession(int $clientId): array
     {
-        $result = localAPI('CreateSsoToken', ['clientid' => $clientId]);
+        $result = localAPI('CreateSsoToken', ['client_id' => $clientId]);
 
         if (is_array($result) && ($result['result'] ?? '') === 'success' && !empty($result['redirect_url'])) {
             return [
