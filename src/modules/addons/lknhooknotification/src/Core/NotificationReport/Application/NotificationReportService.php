@@ -22,14 +22,15 @@ final class NotificationReportService
     /**
      * @param  integer $reportsPerPage
      * @param  integer $currentPage
+     * @param  array   $filters
      *
      * @return NotificationReport[]
      */
-    public function getReportsForView(int $reportsPerPage, int $currentPage): array
+    public function getReportsForView(int $reportsPerPage, int $currentPage, array $filters = []): array
     {
         $offset = ($currentPage - 1) * $reportsPerPage;
 
-        $repoResponse = $this->notificationReportRepository->paginate($offset, $reportsPerPage);
+        $repoResponse = $this->notificationReportRepository->paginate($offset, $reportsPerPage, $filters);
 
         $reports = array_map(function ($row) {
             return new NotificationReport(
@@ -51,6 +52,36 @@ final class NotificationReportService
             'reports' => $reports,
             'totalReports' => $repoResponse['totalReports'],
         ];
+    }
+
+    /**
+     * KPI cards: total, sent, not sent, error and success rate over the selected period.
+     *
+     * @return array{total: int, sent: int, not_sent: int, error: int, success_rate: float}
+     */
+    public function getKpiStatistics(array $filters, string $period): array
+    {
+        $counts = $this->notificationReportRepository->getCountsByStatus($filters, $period);
+
+        $successRate = $counts['total'] > 0
+            ? round(($counts['sent'] / $counts['total']) * 100, 1)
+            : 0.0;
+
+        return [
+            'total' => $counts['total'],
+            'sent' => $counts['sent'],
+            'not_sent' => $counts['not_sent'],
+            'error' => $counts['error'],
+            'success_rate' => $successRate,
+        ];
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getDistinctNotifications(): array
+    {
+        return $this->notificationReportRepository->getDistinctNotifications();
     }
 
     public function createReport(

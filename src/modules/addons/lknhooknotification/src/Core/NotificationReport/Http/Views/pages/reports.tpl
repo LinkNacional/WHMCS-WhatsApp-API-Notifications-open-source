@@ -9,9 +9,219 @@
         .report-link {
             padding: 0px;
         }
+
+        .kpi-panel .panel-body {
+            text-align: center;
+            padding: 15px 10px;
+        }
+
+        .kpi-panel .kpi-value {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .kpi-panel .kpi-label {
+            color: #777;
+            margin-bottom: 0px;
+        }
+
+        .filter-form .form-group {
+            margin-bottom: 10px;
+        }
+
+        .filter-form label {
+            font-weight: normal;
+        }
     </style>
+
     <div class="row">
         <div class="col-md-12">
+            {* KPI cards *}
+            <div class="row">
+                <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="panel panel-default kpi-panel">
+                        <div class="panel-body">
+                            <p class="kpi-value">{$page_params.kpi.total}</p>
+                            <p class="kpi-label">{lkn_hn_lang text="Total"}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="panel panel-default kpi-panel">
+                        <div class="panel-body">
+                            <p class="kpi-value">{$page_params.kpi.sent}</p>
+                            <p class="kpi-label">{lkn_hn_lang text="Sent"}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="panel panel-default kpi-panel">
+                        <div class="panel-body">
+                            <p class="kpi-value">{$page_params.kpi.not_sent}</p>
+                            <p class="kpi-label">{lkn_hn_lang text="Not sent"}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-xs-6">
+                    <div class="panel panel-default kpi-panel">
+                        <div class="panel-body">
+                            <p class="kpi-value">{$page_params.kpi.error}</p>
+                            <p class="kpi-label">{lkn_hn_lang text="Error"}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-4 col-xs-6">
+                    <div class="panel panel-default kpi-panel">
+                        <div class="panel-body">
+                            <p class="kpi-value">{$page_params.kpi.success_rate}%</p>
+                            <p class="kpi-label">{lkn_hn_lang text="Success rate"}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {* Filters *}
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form
+                        method="get"
+                        action=""
+                        class="filter-form"
+                    >
+                        <input type="hidden" name="module" value="lknhooknotification">
+                        <input type="hidden" name="page" value="notification-reports">
+
+                        <div class="row">
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-period">{lkn_hn_lang text="Period"}</label>
+                                <select
+                                    id="filter-period"
+                                    name="period"
+                                    class="form-control"
+                                    onchange="this.form.submit()"
+                                >
+                                    {foreach from=$page_params.period_options key=$key item=$label}
+                                        <option
+                                            value="{$key}"
+                                            {if $page_params.period === $key}selected{/if}
+                                        >{$label}</option>
+                                    {/foreach}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-status">{lkn_hn_lang text="Status"}</label>
+                                <select id="filter-status" name="status" class="form-control">
+                                    {foreach from=$page_params.status_options key=$key item=$label}
+                                        <option
+                                            value="{$key}"
+                                            {if $page_params.filters.status === $key}selected{/if}
+                                        >{$label}</option>
+                                    {/foreach}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-platform">{lkn_hn_lang text="Platform"}</label>
+                                <select id="filter-platform" name="platform" class="form-control">
+                                    {foreach from=$page_params.platform_options key=$key item=$label}
+                                        <option
+                                            value="{$key}"
+                                            {if $page_params.filters.platform === $key}selected{/if}
+                                        >{$label}</option>
+                                    {/foreach}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-category">{lkn_hn_lang text="Category"}</label>
+                                <select id="filter-category" name="category" class="form-control">
+                                    {foreach from=$page_params.category_options key=$key item=$label}
+                                        <option
+                                            value="{$key}"
+                                            {if $page_params.filters.category === $key}selected{/if}
+                                        >{$label}</option>
+                                    {/foreach}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-notification">{lkn_hn_lang text="Notification"}</label>
+                                <select id="filter-notification" name="notification" class="form-control">
+                                    <option value="">{lkn_hn_lang text="All notifications"}</option>
+                                    {foreach from=$page_params.notification_options item=$notification_code}
+                                        <option
+                                            value="{$notification_code}"
+                                            {if $page_params.filters.notification === $notification_code}selected{/if}
+                                        >{lkn_hn_lang text="{$notification_code}"}</option>
+                                    {/foreach}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-client-id">{lkn_hn_lang text="Client ID"}</label>
+                                <input
+                                    id="filter-client-id"
+                                    type="number"
+                                    name="client_id"
+                                    class="form-control"
+                                    value="{$page_params.filters.client_id}"
+                                >
+                            </div>
+
+                            <div class="col-md-2 col-sm-6 form-group">
+                                <label for="filter-date-from">{lkn_hn_lang text="Start date"}</label>
+                                <input
+                                    id="filter-date-from"
+                                    type="date"
+                                    name="date_from"
+                                    class="form-control"
+                                    value="{$page_params.filters.date_from}"
+                                >
+                            </div>
+
+                            <div class="col-md-2 col-sm-6 form-group">
+                                <label for="filter-date-to">{lkn_hn_lang text="End date"}</label>
+                                <input
+                                    id="filter-date-to"
+                                    type="date"
+                                    name="date_to"
+                                    class="form-control"
+                                    value="{$page_params.filters.date_to}"
+                                >
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label for="filter-q">{lkn_hn_lang text="Search message or target"}</label>
+                                <input
+                                    id="filter-q"
+                                    type="text"
+                                    name="q"
+                                    class="form-control"
+                                    value="{$page_params.filters.q}"
+                                >
+                            </div>
+
+                            <div class="col-md-3 col-sm-6 form-group">
+                                <label>&nbsp;</label>
+                                <div>
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        {lkn_hn_lang text="Apply filters"}
+                                    </button>
+                                    <a
+                                        href="?module=lknhooknotification&page=notification-reports"
+                                        class="btn btn-default btn-sm"
+                                    >
+                                        {lkn_hn_lang text="Clear filters"}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <div class="panel panel-default">
                 <div class="table-responsive">
                     <table class="table table-hover table-condensed">
@@ -134,7 +344,7 @@
 
             <div>
                 {assign "total_pages" value=ceil($page_params.total_reports / $page_params.reports_per_page)}
-                {assign "page_link_tpl" value='?module=lknhooknotification&page=notification-reports&pageN'}
+                {assign "page_link_tpl" value="?module=lknhooknotification&page=notification-reports{$page_params.filters_query_string}&pageN"}
 
                 {if $total_pages > 1}
                     <nav
