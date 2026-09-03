@@ -4,5 +4,5 @@ namespace Lkn\HookNotification\Core\Shared\Infrastructure\Config;
 
 final class ModuleInfo
 {
-    public const VERSION = '4.6.3';
+    public const VERSION = '4.7.0';
 }
