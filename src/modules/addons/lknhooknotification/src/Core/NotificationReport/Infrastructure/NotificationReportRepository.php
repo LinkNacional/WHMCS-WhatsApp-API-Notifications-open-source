@@ -180,6 +180,80 @@ final class NotificationReportRepository extends BaseRepository
     }
 
     /**
+     * Epoch timestamps (UTC) of every report in the period window, so the
+     * application layer can group them day/hour in the PHP timezone without
+     * depending on the MySQL session timezone.
+     *
+     * @return array<int>
+     */
+    public function getReportTimestamps(array $filters, string $period): array
+    {
+        $query = $this->query->table('mod_lkn_hook_notification_reports');
+        $this->applyFilters($query, $filters, true);
+        $this->applyPeriod($query, $period);
+
+        return $query
+            ->selectRaw('UNIX_TIMESTAMP(created_at) AS ts')
+            ->get()
+            ->map(static fn ($row) => (int) $row->ts)
+            ->all();
+    }
+
+    /**
+     * Top notification codes by volume in the period.
+     *
+     * @return array<int, array{notification: string, total: int}>
+     */
+    public function getTopNotifications(array $filters, string $period, int $limit = 10): array
+    {
+        $query = $this->query->table('mod_lkn_hook_notification_reports');
+        $this->applyFilters($query, $filters, true);
+        $this->applyPeriod($query, $period);
+
+        return $query
+            ->select('notification', Capsule::raw('COUNT(*) AS total'))
+            ->whereNotNull('notification')
+            ->where('notification', '!=', '')
+            ->groupBy('notification')
+            ->orderBy('total', 'desc')
+            ->orderBy('notification', 'asc')
+            ->limit($limit)
+            ->get()
+            ->map(static fn ($row) => [
+                'notification' => (string) $row->notification,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    /**
+     * Top error messages (status=error) by volume in the period.
+     *
+     * @return array<int, array{msg: string, total: int}>
+     */
+    public function getTopErrorMessages(array $filters, string $period, int $limit = 10): array
+    {
+        $query = $this->query->table('mod_lkn_hook_notification_reports');
+        $this->applyFilters($query, $filters, true);
+        $this->applyPeriod($query, $period);
+
+        return $query
+            ->select('msg', Capsule::raw('COUNT(*) AS total'))
+            ->where('status', NotificationReportStatus::ERROR->value)
+            ->whereNotNull('msg')
+            ->where('msg', '!=', '')
+            ->groupBy('msg')
+            ->orderBy('total', 'desc')
+            ->limit($limit)
+            ->get()
+            ->map(static fn ($row) => [
+                'msg' => (string) $row->msg,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    /**
      * Applies whitelisted filters to a query builder. Strict, no raw SQL.
      *
      * @param  mixed $query

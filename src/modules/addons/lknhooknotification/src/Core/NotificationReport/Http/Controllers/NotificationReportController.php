@@ -51,6 +51,7 @@ final class NotificationReportController extends BaseController
             'filters' => $filters,
             'period' => $period,
             'kpi' => $kpi,
+            'charts' => $this->notificationReportService->getChartData($filters, $period),
             'filters_query_string' => $this->buildQueryString($filters, $period),
             'status_options' => $this->statusOptions(),
             'platform_options' => $this->platformOptions(),

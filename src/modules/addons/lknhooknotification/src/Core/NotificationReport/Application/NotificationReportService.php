@@ -3,6 +3,7 @@
 namespace Lkn\HookNotification\Core\NotificationReport\Application;
 
 use DateTime;
+use DateTimeZone;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReport;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReportCategory;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReportStatus;
@@ -171,5 +172,91 @@ final class NotificationReportService
                 'top_notifications' => $this->notificationReportRepository->getTopNotificationsForLastHour(),
             ],
         ];
+    }
+
+    /**
+     * Aggregates the server-side chart series for the reports view.
+     *
+     * @return array{
+     *   by_day: array<int, array{label: string, total: int, pct: float}>,
+     *   by_hour: array<int, array{label: string, total: int, pct: float}>,
+     *   top_notifications: array<int, array{notification: string, total: int, pct: float}>,
+     *   top_errors: array<int, array{msg: string, total: int, pct: float}>
+     * }
+     */
+    public function getChartData(array $filters, string $period): array
+    {
+        $timezone = new DateTimeZone(date_default_timezone_get());
+        $timestamps = $this->notificationReportRepository->getReportTimestamps($filters, $period);
+
+        $byDayCounts = [];
+        $byHourCounts = array_fill(0, 24, 0);
+
+        foreach ($timestamps as $ts) {
+            $dt = (new DateTime('@' . $ts))->setTimezone($timezone);
+            $dayKey = $dt->format('Y-m-d');
+            $byDayCounts[$dayKey] = ($byDayCounts[$dayKey] ?? 0) + 1;
+            $byHourCounts[(int) $dt->format('G')] += 1;
+        }
+
+        // Fill the day window (inclusive of today) so empty days render as 0.
+        $days = $period === '30d' ? 30 : ($period === '24h' ? 1 : 7);
+        $now = new DateTime('now', $timezone);
+
+        $byDay = [];
+
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $day = (clone $now)->modify("-{$i} days");
+            $key = $day->format('Y-m-d');
+            $byDay[] = [
+                'label' => $day->format('d/m'),
+                'title' => $day->format('Y-m-d'),
+                'total' => $byDayCounts[$key] ?? 0,
+            ];
+        }
+
+        $byHour = [];
+
+        for ($h = 0; $h < 24; $h++) {
+            $byHour[] = [
+                'label' => sprintf('%02d', $h),
+                'title' => sprintf('%02d:00', $h),
+                'total' => $byHourCounts[$h],
+            ];
+        }
+
+        return [
+            'by_day' => $this->withPercentages($byDay),
+            'by_hour' => $this->withPercentages($byHour),
+            'top_notifications' => $this->withPercentages(
+                $this->notificationReportRepository->getTopNotifications($filters, $period, 10)
+            ),
+            'top_errors' => $this->withPercentages(
+                $this->notificationReportRepository->getTopErrorMessages($filters, $period, 10)
+            ),
+        ];
+    }
+
+    /**
+     * Adds a `pct` (percentage of the max value) to each item for bar sizing.
+     *
+     * @param  array<int, array<string, mixed>> $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function withPercentages(array $items): array
+    {
+        $max = 0;
+
+        foreach ($items as $item) {
+            $max = max($max, (int) ($item['total'] ?? 0));
+        }
+
+        foreach ($items as &$item) {
+            $item['pct'] = $max > 0 ? round(((int) $item['total'] / $max) * 100, 1) : 0.0;
+        }
+
+        unset($item);
+
+        return $items;
     }
 }

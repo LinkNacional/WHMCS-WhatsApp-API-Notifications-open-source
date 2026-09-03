@@ -500,3 +500,7 @@ $_ADDONLANG['Last 24 hours'] = 'Últimas 24 horas';
 $_ADDONLANG['Last 7 days'] = 'Últimos 7 dias';
 $_ADDONLANG['Last 30 days'] = 'Últimos 30 dias';
 $_ADDONLANG['Client ID'] = 'ID do Cliente';
+$_ADDONLANG['Messages per day'] = 'Mensagens por dia';
+$_ADDONLANG['Messages per hour'] = 'Mensagens por hora';
+$_ADDONLANG['Top error messages'] = 'Principais mensagens de erro';
+$_ADDONLANG['No data for this period'] = 'Sem dados para este período';

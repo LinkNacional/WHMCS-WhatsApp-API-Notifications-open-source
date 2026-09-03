@@ -33,6 +33,60 @@
         .filter-form label {
             font-weight: normal;
         }
+
+        .chart-panel .panel-body {
+            padding: 15px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .bar-row .bar-label {
+            flex: 0 0 96px;
+            font-size: 11px;
+            color: #777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 6px;
+            text-align: right;
+        }
+
+        .bar-row .bar-track {
+            flex: 1;
+            background: #f1f1f1;
+            border-radius: 3px;
+            height: 16px;
+            overflow: hidden;
+        }
+
+        .bar-row .bar-fill {
+            height: 100%;
+            background: #337ab7;
+            border-radius: 3px;
+            min-width: 1px;
+        }
+
+        .bar-row .bar-value {
+            flex: 0 0 42px;
+            font-size: 11px;
+            color: #555;
+            padding-left: 6px;
+        }
+
+        .bar-row.bar-error .bar-fill {
+            background: #d9534f;
+        }
+
+        .chart-empty {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px 0;
+        }
     </style>
 
     <div class="row">
@@ -76,6 +130,95 @@
                         <div class="panel-body">
                             <p class="kpi-value">{$page_params.kpi.success_rate}%</p>
                             <p class="kpi-label">{lkn_hn_lang text="Success rate"}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {* Charts (server-side, CSS bars) *}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="panel panel-default chart-panel">
+                        <div class="panel-heading">{lkn_hn_lang text="Messages per day"}</div>
+                        <div class="panel-body">
+                            {if $page_params.charts.by_day}
+                                {foreach from=$page_params.charts.by_day item=$bar}
+                                    <div class="bar-row">
+                                        <span class="bar-label" title="{$bar.title}">{$bar.label}</span>
+                                        <div class="bar-track">
+                                            <div class="bar-fill" style="width: {$bar.pct}%"></div>
+                                        </div>
+                                        <span class="bar-value">{$bar.total}</span>
+                                    </div>
+                                {/foreach}
+                            {else}
+                                <div class="chart-empty">{lkn_hn_lang text="No data for this period"}</div>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="panel panel-default chart-panel">
+                        <div class="panel-heading">{lkn_hn_lang text="Messages per hour"}</div>
+                        <div class="panel-body">
+                            {if $page_params.charts.by_hour}
+                                {foreach from=$page_params.charts.by_hour item=$bar}
+                                    <div class="bar-row">
+                                        <span class="bar-label" title="{$bar.title}">{$bar.label}h</span>
+                                        <div class="bar-track">
+                                            <div class="bar-fill" style="width: {$bar.pct}%"></div>
+                                        </div>
+                                        <span class="bar-value">{$bar.total}</span>
+                                    </div>
+                                {/foreach}
+                            {else}
+                                <div class="chart-empty">{lkn_hn_lang text="No data for this period"}</div>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="panel panel-default chart-panel">
+                        <div class="panel-heading">{lkn_hn_lang text="Top notifications"}</div>
+                        <div class="panel-body">
+                            {if $page_params.charts.top_notifications}
+                                {foreach from=$page_params.charts.top_notifications item=$bar}
+                                    <div class="bar-row">
+                                        <span class="bar-label" title="{$bar.notification}">{lkn_hn_lang text="{$bar.notification}"}</span>
+                                        <div class="bar-track">
+                                            <div class="bar-fill" style="width: {$bar.pct}%"></div>
+                                        </div>
+                                        <span class="bar-value">{$bar.total}</span>
+                                    </div>
+                                {/foreach}
+                            {else}
+                                <div class="chart-empty">{lkn_hn_lang text="No data for this period"}</div>
+                            {/if}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="panel panel-default chart-panel">
+                        <div class="panel-heading">{lkn_hn_lang text="Top error messages"}</div>
+                        <div class="panel-body">
+                            {if $page_params.charts.top_errors}
+                                {foreach from=$page_params.charts.top_errors item=$bar}
+                                    <div class="bar-row bar-error">
+                                        <span class="bar-label" title="{$bar.msg|escape}">{$bar.msg|truncate:24|escape}</span>
+                                        <div class="bar-track">
+                                            <div class="bar-fill" style="width: {$bar.pct}%"></div>
+                                        </div>
+                                        <span class="bar-value">{$bar.total}</span>
+                                    </div>
+                                {/foreach}
+                            {else}
+                                <div class="chart-empty">{lkn_hn_lang text="No data for this period"}</div>
+                            {/if}
                         </div>
                     </div>
                 </div>
