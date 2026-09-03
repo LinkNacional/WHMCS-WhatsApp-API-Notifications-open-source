@@ -33,7 +33,7 @@ enum NotificationReportStatus: string
             self::SENT => lkn_hn_lang('Sent'),
             self::NOT_SENT => lkn_hn_lang('Not sent'),
             self::ERROR => lkn_hn_lang('Error'),
-            self::ERROR => lkn_hn_lang('Resent'),
+            self::RESENT => lkn_hn_lang('Resent'),
         };
     }
 }
