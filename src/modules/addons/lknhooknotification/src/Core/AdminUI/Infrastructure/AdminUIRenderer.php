@@ -22,6 +22,8 @@ final class AdminUIRenderer
 
         $view = new View();
 
+        $view->assign('csrf_token', lkn_hn_admin_csrf_token());
+
         if ($matched === null) {
             $view->setTemplateDir(__DIR__ . '/../Http/Views');
 
@@ -35,14 +37,39 @@ final class AdminUIRenderer
 
         $controllerInstance = new $controllerClass($view);
 
-        $postParams = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $getParams  = $_GET;
+        if (lkn_hn_is_post_request()) {
+            $postParams = json_decode(file_get_contents('php://input'), true);
 
-        unset($postParams['token']);
-        unset($getParams['module']);
-        unset($getParams['page']);
+            if (!is_array($postParams)) {
+                $postParams = $_POST;
+            }
 
-        $request = ['request' => array_merge($postParams, $getParams)];
+            $token = $postParams['lkn_hn_token'] ?? null;
+
+            if (
+                !lkn_hn_admin_csrf_token_is_valid($token)
+                || !lkn_hn_request_is_same_origin()
+            ) {
+                http_response_code(403);
+
+                return '<div class="alert alert-danger" style="margin-top: 15px;">'
+                    . lkn_hn_lang('Invalid security token. Reload the page and try again.')
+                    . '</div>';
+            }
+
+            unset($postParams['lkn_hn_token'], $postParams['token']);
+
+            // State-changing requests must carry their parameters in the body.
+            // $_GET is never merged here: merging it let a plain link overwrite
+            // stored settings and trigger other admin actions.
+            $requestParams = $postParams;
+        } else {
+            $requestParams = $_GET;
+
+            unset($requestParams['module'], $requestParams['page']);
+        }
+
+        $request = ['request' => $requestParams];
 
         $controllerMethodParams = array_merge($endpointParams, $request);
 

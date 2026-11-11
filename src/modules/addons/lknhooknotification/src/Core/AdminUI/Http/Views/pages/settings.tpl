@@ -24,6 +24,11 @@
     >
         <input
             type="hidden"
+            name="lkn_hn_token"
+            value="{$csrf_token}"
+        >
+        <input
+            type="hidden"
             name="placeholder"
             value="placeholder"
         >

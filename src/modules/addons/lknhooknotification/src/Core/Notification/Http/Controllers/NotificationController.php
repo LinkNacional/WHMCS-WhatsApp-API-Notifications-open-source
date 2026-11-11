@@ -103,6 +103,7 @@ final class NotificationController extends BaseController
         );
 
         if (
+            lkn_hn_is_post_request() &&
             !empty($request) &&
             (
                 (
@@ -200,7 +201,7 @@ final class NotificationController extends BaseController
         /** @var string $templateLocale  */
         $templateLocale = $request['template-locale'];
 
-        if (isset($request['delete-template'])) {
+        if (lkn_hn_is_post_request() && isset($request['delete-template'])) {
             $templateDeletionResult = $this->notificationService->handleTemplateDelete(
                 $notificationCode,
                 $templateLocale,
