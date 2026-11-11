@@ -9,9 +9,27 @@ final class TelegramApiClient extends BaseApiClient
 {
     private string $baseUrl;
 
-    public function __construct(private readonly string $botToken)
+    /** @var array<int, mixed> */
+    private array $proxyOptions = [];
+
+    public function __construct(private readonly string $botToken, array $proxy = [])
     {
         $this->baseUrl = 'https://api.telegram.org/bot' . $botToken;
+
+        $type = strtolower(trim((string) ($proxy['type'] ?? '')));
+        $host = trim((string) ($proxy['host'] ?? ''));
+        $port = (int) ($proxy['port'] ?? 0);
+
+        if (in_array($type, ['http', 'https', 'socks5', 'socks5h'], true) && $host !== '' && $port > 0) {
+            $this->proxyOptions[CURLOPT_PROXY] = $type . '://' . $host . ':' . $port;
+
+            $username = trim((string) ($proxy['username'] ?? ''));
+            $password = (string) ($proxy['password'] ?? '');
+
+            if ($username !== '' && $password !== '') {
+                $this->proxyOptions[CURLOPT_PROXYUSERPWD] = $username . ':' . $password;
+            }
+        }
     }
 
     public function sendMessage(string $chatId, string $text, ?string $parseMode = null): ApiResponse
@@ -31,13 +49,15 @@ final class TelegramApiClient extends BaseApiClient
             $this->baseUrl,
             'sendMessage',
             ['Content-Type: application/json'],
-            $body
+            $body,
+            [],
+            $this->proxyOptions
         );
     }
 
     public function getMe(): ApiResponse
     {
-        return $this->httpRequest('GET', $this->baseUrl, 'getMe');
+        return $this->httpRequest('GET', $this->baseUrl, 'getMe', [], [], [], $this->proxyOptions);
     }
 
     public function setWebhook(string $url, string $secret): ApiResponse
@@ -51,7 +71,9 @@ final class TelegramApiClient extends BaseApiClient
                 'url' => $url,
                 'secret_token' => $secret,
                 'allowed_updates' => ['message'],
-            ]
+            ],
+            [],
+            $this->proxyOptions
         );
     }
 
@@ -62,12 +84,14 @@ final class TelegramApiClient extends BaseApiClient
             $this->baseUrl,
             'deleteWebhook',
             ['Content-Type: application/json'],
-            ['drop_pending_updates' => false]
+            ['drop_pending_updates' => false],
+            [],
+            $this->proxyOptions
         );
     }
 
     public function getWebhookInfo(): ApiResponse
     {
-        return $this->httpRequest('GET', $this->baseUrl, 'getWebhookInfo');
+        return $this->httpRequest('GET', $this->baseUrl, 'getWebhookInfo', [], [], [], $this->proxyOptions);
     }
 }

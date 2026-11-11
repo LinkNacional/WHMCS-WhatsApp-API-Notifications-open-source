@@ -37,7 +37,13 @@ final class PlatformApiClientFactory
 
     public function makeTelegramClient(TelegramSettings $settings): TelegramApiClient
     {
-        return new TelegramApiClient((string) $settings->botToken);
+        return new TelegramApiClient((string) $settings->botToken, [
+            'type' => $settings->proxyType,
+            'host' => $settings->proxyHost,
+            'port' => $settings->proxyPort,
+            'username' => $settings->proxyUsername,
+            'password' => $settings->proxyPassword,
+        ]);
     }
 
     public function makeChatwootClient(ChatwootSettings $settings): ChatwootApiClient

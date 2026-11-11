@@ -87,6 +87,11 @@ final class PlatformSettingsFactory
             lkn_hn_config(Settings::TELEGRAM_BOT_USERNAME),
             lkn_hn_config(Settings::TELEGRAM_WEBHOOK_SECRET),
             lkn_hn_config(Settings::TELEGRAM_PARSE_MODE),
+            lkn_hn_config(Settings::TELEGRAM_PROXY_TYPE),
+            lkn_hn_config(Settings::TELEGRAM_PROXY_HOST),
+            lkn_hn_config(Settings::TELEGRAM_PROXY_PORT),
+            lkn_hn_config(Settings::TELEGRAM_PROXY_USERNAME),
+            lkn_hn_config(Settings::TELEGRAM_PROXY_PASSWORD),
         );
     }
 

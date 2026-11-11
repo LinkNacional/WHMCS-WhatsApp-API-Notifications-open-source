@@ -55,6 +55,12 @@ enum Settings: string
     case TELEGRAM_WEBHOOK_SECRET = 'telegram_webhook_secret';
     case TELEGRAM_PARSE_MODE    = 'telegram_parse_mode';
 
+    case TELEGRAM_PROXY_TYPE     = 'telegram_proxy_type';
+    case TELEGRAM_PROXY_HOST     = 'telegram_proxy_host';
+    case TELEGRAM_PROXY_PORT     = 'telegram_proxy_port';
+    case TELEGRAM_PROXY_USERNAME = 'telegram_proxy_username';
+    case TELEGRAM_PROXY_PASSWORD = '***';
+
     case ENABLE_LOG                        = 'enable_log';
     case LKN_LICENSE                       = 'lkn_license';
     case DEFAULT_CLIENT_NAME               = 'default_client_name';

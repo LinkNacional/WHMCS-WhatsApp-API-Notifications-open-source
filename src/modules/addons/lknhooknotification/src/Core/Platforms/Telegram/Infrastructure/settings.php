@@ -35,4 +35,42 @@ return [
         'type' => 'text',
         'default' => 'HTML',
     ],
+    [
+        'setting' => Settings::TELEGRAM_PROXY_TYPE,
+        'label' => lkn_hn_lang('Proxy Type'),
+        'description' => lkn_hn_lang('Optional. Select None to disable the proxy.'),
+        'type' => 'select',
+        'options' => [
+            ['label' => 'None', 'value' => 'none'],
+            ['label' => 'HTTP', 'value' => 'http'],
+            ['label' => 'HTTPS', 'value' => 'https'],
+            ['label' => 'SOCKS5', 'value' => 'socks5'],
+            ['label' => 'SOCKS5H', 'value' => 'socks5h'],
+        ],
+        'default' => 'none',
+    ],
+    [
+        'setting' => Settings::TELEGRAM_PROXY_HOST,
+        'label' => lkn_hn_lang('Proxy Host'),
+        'description' => lkn_hn_lang('Proxy host (IP or domain). Leave empty to disable.'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::TELEGRAM_PROXY_PORT,
+        'label' => lkn_hn_lang('Proxy Port'),
+        'description' => lkn_hn_lang('Proxy port. Leave empty to disable.'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::TELEGRAM_PROXY_USERNAME,
+        'label' => lkn_hn_lang('Proxy Username'),
+        'description' => lkn_hn_lang('Optional proxy username.'),
+        'type' => 'text',
+    ],
+    [
+        'setting' => Settings::TELEGRAM_PROXY_PASSWORD,
+        'label' => lkn_hn_lang('Proxy Password'),
+        'description' => lkn_hn_lang('Optional proxy password. Never logged.'),
+        'type' => 'password',
+    ],
 ];
