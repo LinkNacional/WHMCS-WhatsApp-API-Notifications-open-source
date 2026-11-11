@@ -365,6 +365,21 @@ function getHostDomainByHostId(int $hostId): string
     return Capsule::table('tblhosting')->where('id', $hostId)->first('domain')->domain;
 }
 
+function getServiceUsernameByServiceId(int $serviceId): string
+{
+    return (string) Capsule::table('tblhosting')->where('id', $serviceId)->value('username');
+}
+
+function getServiceStatusByServiceId(int $serviceId): string
+{
+    return (string) Capsule::table('tblhosting')->where('id', $serviceId)->value('domainstatus');
+}
+
+function getServiceProductDetailsUrlByServiceId(int $serviceId): string
+{
+    return systemUrl() . '/clientarea.php?action=productdetails&id=' . $serviceId;
+}
+
 function getClientIdByInvoiceId(int $invoiceId): int
 {
     return Capsule::table('tblinvoices')->where('id', $invoiceId)->first('userid')->userid;
