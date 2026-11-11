@@ -169,13 +169,15 @@ final class NotificationService
 
     public function handleTemplateDelete(
         string $notificationCode,
-        string $templateLocale
+        string $templateLocale,
+        ?Platforms $platform = null
     ): Result {
         try {
             $result = $this->notificationRepository
                 ->deleteNotificationTemplate(
                     $notificationCode,
-                    $templateLocale
+                    $templateLocale,
+                    $platform?->value
                 );
 
             return lkn_hn_result('success');

@@ -100,7 +100,7 @@
                                     id="platform"
                                     name="platform"
                                     class="form-control"
-                                    onchange="document.getElementById('notification-form').submit()"
+                                    onchange="window.location='?module=lknhooknotification&page=notifications/{$page_params.editing_notification->code}/templates/{$page_params.editing_locale}&platform='+this.value"
                                     {if $page_params.editing_template}
                                         readonly
                                     {/if}

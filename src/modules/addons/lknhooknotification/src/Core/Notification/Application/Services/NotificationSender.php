@@ -115,54 +115,71 @@ final class NotificationSender extends Singleton {
             return new Result(code: 'aborted-by-notification-custom-condition');
         }
 
-        $platformResolverResult = $this->notificationPlatformResolver->resolve(
-            $notification
-        );
+        $platforms = $this->notificationPlatformResolver->resolveAll($notification);
 
-        if ($platformResolverResult instanceof Result) {
+        if ($platforms instanceof Result) {
             $this->notificationReportService->createReport(
                 $notification->client->id,
                 $notification->categoryId,
                 $notification->category,
                 NotificationReportStatus::NOT_SENT,
-                $platformResolverResult->code,
+                $platforms->code,
                 null,
                 $notification->code,
                 $notification->hook
             );
 
-            return $platformResolverResult;
+            return $platforms;
         }
 
-        /** @var AbstractPlatform $platform */
-        /** @var NotificationTemplate $template */
-        [$platform, $template] = $platformResolverResult;
+        $results = [];
 
-
-        $platformResponse = $platform->sendNotification(
-            $notification,
-            $template
-        );
-
-        if ($platformResponse->status === NotificationReportStatus::SENT) {
-            foreach ($this->notificationObservers as $obsever) {
-                $obsever->onNotificationSent($notification, $template, $platform);
+        foreach ($platforms as [$platform, $template]) {
+            try {
+                $platformResponse = $platform->sendNotification(
+                    $notification,
+                    $template
+                );
+            } catch (Throwable $th) {
+                $platformResponse = new PlatformNotificationSendResult(
+                    NotificationReportStatus::ERROR,
+                    $th->getMessage()
+                );
             }
+
+            if ($platformResponse->status === NotificationReportStatus::SENT) {
+                foreach ($this->notificationObservers as $observer) {
+                    $observer->onNotificationSent($notification, $template, $platform);
+                }
+            }
+
+            $this->notificationReportService->createReport(
+                $notification->client->id,
+                $notification->categoryId,
+                $notification->category,
+                $platformResponse->status,
+                $platformResponse->msg,
+                $template->platform,
+                $notification->code,
+                $notification->hook,
+                target: $platformResponse->target,
+                queueId: $queueId,
+            );
+
+            $results[] = [
+                'platform' => $template->platform,
+                'result' => $platformResponse,
+            ];
         }
 
-        $this->notificationReportService->createReport(
-            $notification->client->id,
-            $notification->categoryId,
-            $notification->category,
-            $platformResponse->status,
-            $platformResponse->msg,
-            $template->platform,
-            $notification->code,
-            $notification->hook,
-            target: $platformResponse->target,
-            queueId: $queueId,
-        );
+        if (count($results) === 1) {
+            return $results[0]['result'];
+        }
 
-        return $platformResponse;
+        return new Result(
+            code: 'multi-platform',
+            data: $results,
+            msg: 'Notifications dispatched.'
+        );
     }
 }

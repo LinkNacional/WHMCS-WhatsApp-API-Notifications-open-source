@@ -30,6 +30,7 @@ final class SettingsService
             Platforms::WP_EVO => 'EvolutionApi',
             Platforms::WHATSAPP => 'MetaWhatsApp',
             Platforms::CHATWOOT => 'Chatwoot',
+            Platforms::TELEGRAM => 'Telegram',
             Platforms::MODULE => 'Module',
             Platforms::BULK_MESSAGING => '../BulkMessaging',
         };

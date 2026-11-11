@@ -6,6 +6,7 @@ use Lkn\HookNotification\Core\AdminUI\Http\Controllers\SettingsController;
 use Lkn\HookNotification\Core\BulkMessaging\Http\Controllers\BulkController;
 use Lkn\HookNotification\Core\NotificationReport\Http\Controllers\NotificationReportController;
 use Lkn\HookNotification\Core\Notification\Http\Controllers\NotificationController;
+use Lkn\HookNotification\Core\Platforms\Telegram\Http\Controllers\TelegramLinksController;
 
 return [
     '404' => [
@@ -84,6 +85,12 @@ return [
         'class' => [
             LogsController::class,
             'viewLogs',
+        ],
+    ],
+    'telegram-links' => [
+        'class' => [
+            TelegramLinksController::class,
+            'viewLinks',
         ],
     ],
 ];

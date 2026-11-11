@@ -16,61 +16,75 @@ final class NotificationPlatformResolver
         $this->platformFactory = new PlatformFactory();
     }
 
-    public function resolve(AbstractNotification $notification)
+    /**
+     * @return array<int, array{0: \Lkn\HookNotification\Core\Platforms\Common\AbstractPlatform, 1: NotificationTemplate}>|Result
+     */
+    public function resolveAll(AbstractNotification $notification): array|Result
     {
-        $templateForClientLang = current(
-            array_filter(
-                $notification->templates,
-                fn(NotificationTemplate $template) =>
+        $templates = array_values(array_filter(
+            $notification->templates,
+            fn (NotificationTemplate $template) =>
                 $template->lang === $notification->client->locale
-            )
-        );
+        ));
 
-        // Try to find template for the system default language.
-        if (!$templateForClientLang) {
+        if (!$templates) {
             $systemLocale = lkn_hn_get_system_locale();
 
-            $templateForClientLang = current(
-                array_filter(
-                    $notification->templates,
-                    fn(NotificationTemplate $template) =>
+            $templates = array_values(array_filter(
+                $notification->templates,
+                fn (NotificationTemplate $template) =>
                     $template->lang === $systemLocale
-                )
-            );
+            ));
         }
 
-        if (!$templateForClientLang) {
-            // Bulk messages
-            if (is_null($notification->templates[0]->lang)) {
-                $templateForClientLang = $notification->templates[0];
+        if (!$templates) {
+            if (isset($notification->templates[0]) && is_null($notification->templates[0]->lang)) {
+                $templates = [$notification->templates[0]];
+            } else {
+                $result = new Result(
+                    'no-template-found-for-client-lang',
+                    msg: 'No template found for client language.'
+                );
 
-                $platform = $this->platformFactory->make($templateForClientLang->platform);
+                lkn_hn_log(
+                    'Send notification',
+                    ['whmcsHookParams' => $notification->whmcsHookParams],
+                    ['resultCode' => $result->code]
+                );
 
-                return [$platform, $templateForClientLang];
+                return $result;
+            }
+        }
+
+        $resolved = [];
+        $seen     = [];
+
+        foreach ($templates as $template) {
+            if (!$template->platform) {
+                continue;
             }
 
-            $result = new Result(
-                'no-template-found-for-client-lang',
-                msg: 'No template found for client language.'
-            );
+            $platformKey = $template->platform->value;
 
-            lkn_hn_log(
-                'Send notification',
-                ['whmcsHookParams' => $notification->whmcsHookParams],
-                ['resultCode' => $result->code]
-            );
+            if (isset($seen[$platformKey])) {
+                continue;
+            }
 
-            return $result;
+            $seen[$platformKey] = true;
+            $platform = $this->platformFactory->make($template->platform);
+
+            if (
+                isset($platform->platformSettings)
+                && isset($platform->platformSettings->enabled)
+                && !$platform->platformSettings->enabled
+            ) {
+                continue;
+            }
+
+            $resolved[] = [$platform, $template];
         }
 
-        $platform = $this->platformFactory->make($templateForClientLang->platform);
-
-        if (
-
-            isset($platform->platformSettings)
-            && isset($platform->platformSettings->enabled)
-            && !$platform->platformSettings->enabled
-        ) {
+        if ($resolved === []) {
             $result = new Result(
                 'platform-is-disabled',
                 msg: 'The platform is disabled.'
@@ -85,6 +99,22 @@ final class NotificationPlatformResolver
             return $result;
         }
 
-        return [$platform, $templateForClientLang];
+        return $resolved;
+    }
+
+    /**
+     * Backwards-compatible single-platform resolution.
+     *
+     * @return array{0: \Lkn\HookNotification\Core\Platforms\Common\AbstractPlatform, 1: NotificationTemplate}|Result
+     */
+    public function resolve(AbstractNotification $notification)
+    {
+        $resolved = $this->resolveAll($notification);
+
+        if ($resolved instanceof Result) {
+            return $resolved;
+        }
+
+        return $resolved[0];
     }
 }

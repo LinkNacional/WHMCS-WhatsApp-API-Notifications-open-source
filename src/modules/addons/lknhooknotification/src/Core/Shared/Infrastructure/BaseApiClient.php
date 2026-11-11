@@ -10,7 +10,8 @@ abstract class BaseApiClient
         string $endpoint,
         array $headers = [],
         array $body = [],
-        array $queryParams = []
+        array $queryParams = [],
+        array $extraCurlOptions = []
     ): ApiResponse {
         $requestUrl = "$baseUrl/$endpoint";
 
@@ -43,6 +44,10 @@ abstract class BaseApiClient
                     JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
                 );
             }
+        }
+
+        if ($extraCurlOptions !== []) {
+            $curlOptions = array_merge($curlOptions, $extraCurlOptions);
         }
 
         curl_setopt_array($curlHandle, $curlOptions);

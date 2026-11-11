@@ -32,6 +32,20 @@ final class NotificationViewService
         ) ?: null;
     }
 
+    public function findTemplateByLangAndPlatform(
+        AbstractNotification $notification,
+        string $lang,
+        Platforms $platform
+    ): ?NotificationTemplate {
+        return current(
+            array_filter(
+                $notification->templates,
+                fn(NotificationTemplate $template) =>
+                    $template->lang === $lang && $template->platform === $platform
+            )
+        ) ?: null;
+    }
+
     public function getTemplateEditorForPlatform(
         AbstractNotification $notification,
         ?NotificationTemplate $template,
