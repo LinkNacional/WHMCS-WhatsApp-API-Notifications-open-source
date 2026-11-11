@@ -56,6 +56,15 @@ enum Settings: string
     case TELEGRAM_PARSE_MODE    = 'telegram_parse_mode';
     case TELEGRAM_LINK_SUCCESS_MESSAGE = 'telegram_link_success_message';
 
+    case TELEGRAM_HANDOFF_ENABLE             = 'telegram_handoff_enable';
+    case TELEGRAM_HANDOFF_BUTTON_TEXT        = 'telegram_handoff_button_text';
+    case TELEGRAM_HANDOFF_DESTINATION        = 'telegram_handoff_destination';
+    case TELEGRAM_HANDOFF_WHATSAPP_NUMBER    = 'telegram_handoff_whatsapp_number';
+    case TELEGRAM_HANDOFF_TELEGRAM_BOT       = 'telegram_handoff_telegram_bot';
+    case TELEGRAM_HANDOFF_AUTO_REPLY_ENABLE  = 'telegram_handoff_auto_reply_enable';
+    case TELEGRAM_HANDOFF_AUTO_REPLY_BUTTON_ENABLE = 'telegram_handoff_auto_reply_button_enable';
+    case TELEGRAM_HANDOFF_AUTO_REPLY_TEXT    = 'telegram_handoff_auto_reply_text';
+
     case TELEGRAM_PROXY_TYPE     = 'telegram_proxy_type';
     case TELEGRAM_PROXY_HOST     = 'telegram_proxy_host';
     case TELEGRAM_PROXY_PORT     = 'telegram_proxy_port';

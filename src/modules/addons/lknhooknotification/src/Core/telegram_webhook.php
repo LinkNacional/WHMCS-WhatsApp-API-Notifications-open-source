@@ -1,5 +1,6 @@
 <?php
 
+use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramHandoffService;
 use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramLinkService;
 use Lkn\HookNotification\Core\Platforms\Telegram\Infrastructure\TelegramApiClient;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
@@ -53,13 +54,43 @@ try {
                 $successMessage = 'Conta vinculada com sucesso ao WHMCS!';
             }
 
-            $apiClient->sendMessage($chatId, $successMessage);
+            $systemUrl = rtrim((string) \WHMCS\Database\Capsule::table('tblconfiguration')
+                ->where('setting', 'SystemURL')
+                ->value('value'), '/');
+
+            $returnKeyboard = null;
+
+            if ($systemUrl !== '') {
+                $returnKeyboard = [
+                    'inline_keyboard' => [
+                        [
+                            [
+                                'text' => 'Voltar ao WHMCS',
+                                'url' => $systemUrl . '/clientarea.php?action=details',
+                            ],
+                        ],
+                    ],
+                ];
+            }
+
+            $apiClient->sendMessage($chatId, $successMessage, null, $returnKeyboard);
         } else {
             $apiClient->sendMessage($chatId, 'Nao foi possivel vincular. Gere um novo link no seu perfil.');
         }
     } elseif ($text === '/stop' || $text === '/desconectar') {
         $linkService->unlinkByChatId($chatId);
         $apiClient->sendMessage($chatId, 'Notificacoes do Telegram desconectadas.');
+    } elseif ($text !== '' && !str_starts_with($text, '/')) {
+        $handoff = new TelegramHandoffService();
+
+        if ($handoff->isAutoReplyEnabled()) {
+            $apiClient->sendMessage(
+                $chatId,
+                $handoff->getAutoReplyText(),
+                null,
+                $handoff->buildInlineKeyboard(true)
+            );
+        }
     }
 
     http_response_code(200);

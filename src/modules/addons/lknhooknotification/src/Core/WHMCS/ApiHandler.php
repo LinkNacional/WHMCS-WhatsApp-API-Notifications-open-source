@@ -2,6 +2,7 @@
 
 namespace Lkn\HookNotification\Core\WHMCS;
 
+use Lkn\HookNotification\Core\Platforms\Telegram\Http\Controllers\TelegramStatusController;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Singleton;
 
 final class ApiHandler extends Singleton {
@@ -28,6 +29,14 @@ final class ApiHandler extends Singleton {
             'login/magic-link/verify' => [
                 LoginOtpService::class,
                 'verifyMagicLink',
+            ],
+            'telegram/status' => [
+                TelegramStatusController::class,
+                'status',
+            ],
+            'telegram/unlink' => [
+                TelegramStatusController::class,
+                'unlink',
             ],
         ];
     }

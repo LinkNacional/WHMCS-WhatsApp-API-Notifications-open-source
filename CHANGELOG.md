@@ -1,3 +1,9 @@
+# 4.9.0 - 11/11/26
+
+- Handoff de atendimento configuravel no Telegram: botao em notificacoes e auto-resposta independentes, destinos WhatsApp ou bot de suporte, textos globais e desabilitado por padrao.
+- UX de vinculo no perfil: polling de status, atualizacao ao voltar o foco, botao Voltar ao WHMCS e desconexao via API sem formulario aninhado.
+- Correcoes de CSRF e layout; nenhum numero/bot de teste no codigo.
+
 # 4.8.1 - 11/11/26
 
 - Corrige a pagina de clientes vinculados do Telegram no admin (layout compartilhado) e remove o item duplicado do menu de configuracoes.

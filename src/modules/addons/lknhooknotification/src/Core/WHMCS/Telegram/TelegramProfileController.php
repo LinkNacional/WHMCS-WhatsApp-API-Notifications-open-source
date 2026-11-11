@@ -4,6 +4,7 @@ namespace Lkn\HookNotification\Core\WHMCS\Telegram;
 
 use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramLinkService;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
+use WHMCS\Database\Capsule;
 
 final class TelegramProfileController
 {
@@ -19,31 +20,24 @@ final class TelegramProfileController
             return null;
         }
 
-        $service = new TelegramLinkService();
-
-        if (lkn_hn_is_post_request() && isset($_POST['lkn_telegram_unlink'])) {
-            if (function_exists('check_token') && check_token()) {
-                $service->unlinkByClientId($clientId);
-            }
-
-            return '<script>window.location.href="clientarea.php?action=details";</script>';
-        }
+        $service   = new TelegramLinkService();
+        $csrfToken = function_exists('generate_token') ? (string) generate_token() : '';
+        $config    = json_encode(
+            ['apiUrl' => $this->apiUrl(), 'token' => $csrfToken],
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+        );
 
         $link = $service->getLink($clientId);
 
         if ($link) {
             $username = !empty($link->username) ? '@' . (string) $link->username : '';
             $chatId   = $this->maskChatId((string) $link->chat_id);
-            $token    = function_exists('generate_token') ? (string) generate_token() : '';
 
             $content = '<h3 style="margin-top:0;">Notificacoes via Telegram</h3>'
                 . '<p>Conectado ' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8')
                 . ' (' . htmlspecialchars($chatId, ENT_QUOTES, 'UTF-8') . ')</p>'
-                . '<form method="post" action="clientarea.php?action=details">'
-                . '<input type="hidden" name="token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
-                . '<input type="hidden" name="lkn_telegram_unlink" value="1">'
-                . '<button type="submit" class="btn btn-default">Desconectar Telegram</button>'
-                . '</form>';
+                . '<button type="button" id="lkn-telegram-unlink-btn" class="btn btn-default">Desconectar Telegram</button>'
+                . '<div id="lkn-telegram-unlink-error" style="display:none; margin-top:10px; color:#a94442;">Nao foi possivel desconectar. Tente novamente.</div>';
         } else {
             $token = $service->generateToken($clientId);
             $url   = $token ? $service->buildDeepLink($token) : null;
@@ -54,13 +48,21 @@ final class TelegramProfileController
 
             $content = '<h3 style="margin-top:0;">Notificacoes via Telegram</h3>'
                 . '<p>Vincule sua conta do Telegram para receber notificacoes por la tambem.</p>'
-                . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">'
-                . 'Vincular Telegram</a>';
+                . '<a id="lkn-telegram-link-btn" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">'
+                . 'Vincular Telegram</a>'
+                . '<div id="lkn-telegram-wait" style="display:none; margin-top:10px;">Aguardando confirmacao no Telegram...</div>'
+                . '<div id="lkn-telegram-timeout" style="display:none; margin-top:10px;">'
+                . '<a href="clientarea.php?action=details">Ainda nao confirmou? Atualizar status</a></div>';
         }
 
         $encoded = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         return '<script>(function(){'
+            . 'var cfg=' . $config . ';'
+            . 'var authToken=cfg.token||"";'
+            . 'var profileForm=document.getElementById("frmMyDetails");'
+            . 'var tokenInput=profileForm?profileForm.querySelector(\'input[name="token"], input[name="csrftoken"]\'):document.querySelector(\'input[name="token"], input[name="csrftoken"]\');'
+            . 'if(tokenInput&&tokenInput.value){authToken=tokenInput.value;}'
             . 'function init(){'
             . 'if(document.getElementById("lkn-telegram-profile-block")){return;}'
             . 'var content=' . $encoded . ';'
@@ -84,6 +86,25 @@ final class TelegramProfileController
             . 'wrapper.appendChild(body);'
             . 'if(target&&target.parentNode){target.parentNode.insertBefore(wrapper,target);}'
             . 'else{var fallback=document.querySelector("#frmMyDetails")||document.querySelector(".client-details")||document.querySelector("#main-body");if(fallback){fallback.appendChild(wrapper);}}'
+            . 'if(cfg&&cfg.apiUrl&&document.getElementById("lkn-telegram-link-btn")){'
+            . 'var waitEl=document.getElementById("lkn-telegram-wait");'
+            . 'var timeoutEl=document.getElementById("lkn-telegram-timeout");'
+            . 'var timer=null,attempts=0,waiting=false;'
+            . 'function check(){if(!waiting){return;}fetch(cfg.apiUrl+"?endpoint=telegram/status",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"token="+encodeURIComponent(authToken)}).then(function(r){return r.json();}).then(function(d){if(d&&d.linked){waiting=false;if(timer){clearInterval(timer);}window.location.reload();}}).catch(function(){});}'
+            . 'function start(){if(waiting){return;}waiting=true;attempts=0;if(waitEl){waitEl.style.display="block";}if(timeoutEl){timeoutEl.style.display="none";}if(timer){clearInterval(timer);}timer=setInterval(function(){attempts++;if(attempts>30){waiting=false;clearInterval(timer);if(waitEl){waitEl.style.display="none";}if(timeoutEl){timeoutEl.style.display="block";}return;}check();},3000);check();}'
+            . 'document.getElementById("lkn-telegram-link-btn").addEventListener("click",start);'
+            . 'document.addEventListener("visibilitychange",function(){if(!document.hidden){check();}});'
+            . 'window.addEventListener("focus",check);'
+            . '}'
+            . 'var unlinkBtn=document.getElementById("lkn-telegram-unlink-btn");'
+            . 'if(cfg&&cfg.apiUrl&&unlinkBtn){'
+            . 'unlinkBtn.addEventListener("click",function(){'
+            . 'var err=document.getElementById("lkn-telegram-unlink-error");'
+            . 'var old=unlinkBtn.textContent;'
+            . 'unlinkBtn.disabled=true;unlinkBtn.textContent="Desconectando...";'
+            . 'fetch(cfg.apiUrl+"?endpoint=telegram/unlink",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"token="+encodeURIComponent(authToken)}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){window.location.reload();}else{throw new Error("unlink");}}).catch(function(){unlinkBtn.disabled=false;unlinkBtn.textContent=old;if(err){err.style.display="block";}});'
+            . '});'
+            . '}'
             . '}'
             . 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}'
             . '})();</script>';
@@ -120,5 +141,15 @@ final class TelegramProfileController
         }
 
         return substr($chatId, 0, 3) . str_repeat('*', max(2, $length - 5)) . substr($chatId, -2);
+    }
+
+    private function apiUrl(): string
+    {
+        $systemUrl = (string) Capsule::table('tblconfiguration')
+            ->where('setting', 'SystemURL')
+            ->value('value');
+
+        return rtrim($systemUrl, '/')
+            . '/modules/addons/lknhooknotification/src/Core/api.php';
     }
 }
