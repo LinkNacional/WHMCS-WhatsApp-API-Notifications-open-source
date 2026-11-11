@@ -22,7 +22,7 @@
             >
                 <input
                     type="hidden"
-                    name="token"
+                    name="lkn_hn_token"
                     value="{$csrf_token}"
                 >
                 {foreach from=$page_params.whmcsHookParams item=$paramValue key=$paramName}

@@ -44,7 +44,7 @@ final class AdminUIRenderer
                 $postParams = $_POST;
             }
 
-            $token = $postParams['token'] ?? null;
+            $token = $postParams['lkn_hn_token'] ?? null;
 
             if (
                 !lkn_hn_admin_csrf_token_is_valid($token)
@@ -57,7 +57,7 @@ final class AdminUIRenderer
                     . '</div>';
             }
 
-            unset($postParams['token']);
+            unset($postParams['lkn_hn_token'], $postParams['token']);
 
             // State-changing requests must carry their parameters in the body.
             // $_GET is never merged here: merging it let a plain link overwrite
