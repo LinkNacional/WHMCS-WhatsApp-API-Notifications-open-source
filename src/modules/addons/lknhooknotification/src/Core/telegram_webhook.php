@@ -69,7 +69,7 @@ try {
                 $chatId,
                 $handoff->getAutoReplyText(),
                 null,
-                $handoff->buildInlineKeyboard()
+                $handoff->buildInlineKeyboard(true)
             );
         }
     }

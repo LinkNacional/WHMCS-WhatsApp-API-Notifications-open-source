@@ -62,6 +62,7 @@ enum Settings: string
     case TELEGRAM_HANDOFF_WHATSAPP_NUMBER    = 'telegram_handoff_whatsapp_number';
     case TELEGRAM_HANDOFF_TELEGRAM_BOT       = 'telegram_handoff_telegram_bot';
     case TELEGRAM_HANDOFF_AUTO_REPLY_ENABLE  = 'telegram_handoff_auto_reply_enable';
+    case TELEGRAM_HANDOFF_AUTO_REPLY_BUTTON_ENABLE = 'telegram_handoff_auto_reply_button_enable';
     case TELEGRAM_HANDOFF_AUTO_REPLY_TEXT    = 'telegram_handoff_auto_reply_text';
 
     case TELEGRAM_PROXY_TYPE     = 'telegram_proxy_type';

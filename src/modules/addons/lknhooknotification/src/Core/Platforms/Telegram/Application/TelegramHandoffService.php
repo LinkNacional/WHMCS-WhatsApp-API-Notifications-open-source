@@ -19,6 +19,11 @@ final class TelegramHandoffService
         return (bool) lkn_hn_config(Settings::TELEGRAM_HANDOFF_AUTO_REPLY_ENABLE);
     }
 
+    public function isAutoReplyButtonEnabled(): bool
+    {
+        return (bool) lkn_hn_config(Settings::TELEGRAM_HANDOFF_AUTO_REPLY_BUTTON_ENABLE);
+    }
+
     public function getButtonText(): string
     {
         $text = trim((string) lkn_hn_config(Settings::TELEGRAM_HANDOFF_BUTTON_TEXT));
@@ -39,10 +44,6 @@ final class TelegramHandoffService
 
     public function buildUrl(): ?string
     {
-        if (!$this->isEnabled()) {
-            return null;
-        }
-
         $destination = strtolower(trim((string) lkn_hn_config(Settings::TELEGRAM_HANDOFF_DESTINATION)));
 
         if ($destination === 'whatsapp') {
@@ -71,8 +72,16 @@ final class TelegramHandoffService
     /**
      * @return array{inline_keyboard: array<int, array<int, array{text: string, url: string}>>}|null
      */
-    public function buildInlineKeyboard(): ?array
+    public function buildInlineKeyboard(bool $forAutoReply = false): ?array
     {
+        if ($forAutoReply) {
+            if (!$this->isAutoReplyButtonEnabled()) {
+                return null;
+            }
+        } elseif (!$this->isEnabled()) {
+            return null;
+        }
+
         $url = $this->buildUrl();
 
         if ($url === null) {

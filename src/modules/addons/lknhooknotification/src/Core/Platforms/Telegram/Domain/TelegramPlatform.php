@@ -43,7 +43,7 @@ final class TelegramPlatform extends AbstractPlatform
 
         /** @var TelegramApiClient $apiClient */
         $apiClient = $this->apiClient;
-        $replyMarkup = (new TelegramHandoffService())->buildInlineKeyboard();
+        $replyMarkup = (new TelegramHandoffService())->buildInlineKeyboard(false);
         $response    = $apiClient->sendMessage($chatId, $text, $settings->parseMode, $replyMarkup);
 
         $ok = is_array($response->body) && ($response->body['ok'] ?? false) === true;

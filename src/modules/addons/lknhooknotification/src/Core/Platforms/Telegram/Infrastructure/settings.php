@@ -48,8 +48,8 @@ return [
     ],
     [
         'setting' => Settings::TELEGRAM_HANDOFF_ENABLE,
-        'label' => lkn_hn_lang('Enable support button'),
-        'description' => lkn_hn_lang('Adds a support button to every Telegram notification and enables the configured auto-reply.'),
+        'label' => lkn_hn_lang('Enable support button in notifications'),
+        'description' => lkn_hn_lang('Adds a support button to every Telegram notification. The auto-reply button is controlled separately.'),
         'type' => 'checkbox',
     ],
     [
@@ -83,6 +83,11 @@ return [
         'type' => 'text',
     ],
     [
+        'separator' => true,
+        'title' => lkn_hn_lang('Auto-reply'),
+        'description' => lkn_hn_lang('Configure the automatic response for messages received by the bot.'),
+    ],
+    [
         'setting' => Settings::TELEGRAM_HANDOFF_AUTO_REPLY_ENABLE,
         'label' => lkn_hn_lang('Enable auto-reply for incoming messages'),
         'description' => lkn_hn_lang('When a client replies to a notification, send the auto-reply text and the support button.'),
@@ -93,6 +98,12 @@ return [
         'label' => lkn_hn_lang('Auto-reply text'),
         'description' => lkn_hn_lang('Default: Este canal e apenas para avisos. Para falar com o atendimento, use o botao abaixo.'),
         'type' => 'text',
+    ],
+    [
+        'setting' => Settings::TELEGRAM_HANDOFF_AUTO_REPLY_BUTTON_ENABLE,
+        'label' => lkn_hn_lang('Enable support button in auto-reply'),
+        'description' => lkn_hn_lang('Adds the support button to the auto-reply only. Independent from the notification button.'),
+        'type' => 'checkbox',
     ],
     [
         'separator' => true,
