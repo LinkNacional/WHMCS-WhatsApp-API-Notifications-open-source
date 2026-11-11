@@ -65,11 +65,6 @@ return [
                     'endpoint' => 'platforms/telegram/settings',
                     'icon' => 'fab fa-telegram',
                 ],
-                [
-                    'label' => lkn_hn_lang('Telegram Links'),
-                    'endpoint' => 'telegram-links',
-                    'icon' => 'fab fa-telegram',
-                ],
                 ['divisor' => true, 'title' => lkn_hn_lang('Chatwoot'), 'icon' => 'fal fa-comment'],
                 [
                     'label' => lkn_hn_lang('Settings'),
