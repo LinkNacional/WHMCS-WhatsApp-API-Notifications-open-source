@@ -1,5 +1,6 @@
 <?php
 
+use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramHandoffService;
 use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramLinkService;
 use Lkn\HookNotification\Core\Platforms\Telegram\Infrastructure\TelegramApiClient;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
@@ -60,6 +61,17 @@ try {
     } elseif ($text === '/stop' || $text === '/desconectar') {
         $linkService->unlinkByChatId($chatId);
         $apiClient->sendMessage($chatId, 'Notificacoes do Telegram desconectadas.');
+    } elseif ($text !== '' && !str_starts_with($text, '/')) {
+        $handoff = new TelegramHandoffService();
+
+        if ($handoff->isAutoReplyEnabled()) {
+            $apiClient->sendMessage(
+                $chatId,
+                $handoff->getAutoReplyText(),
+                null,
+                $handoff->buildInlineKeyboard()
+            );
+        }
     }
 
     http_response_code(200);
