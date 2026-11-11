@@ -32,8 +32,12 @@ final class TelegramApiClient extends BaseApiClient
         }
     }
 
-    public function sendMessage(string $chatId, string $text, ?string $parseMode = null): ApiResponse
-    {
+    public function sendMessage(
+        string $chatId,
+        string $text,
+        ?string $parseMode = null,
+        ?array $replyMarkup = null
+    ): ApiResponse {
         $body = [
             'chat_id' => $chatId,
             'text' => $text,
@@ -42,6 +46,10 @@ final class TelegramApiClient extends BaseApiClient
 
         if ($parseMode !== null && $parseMode !== '') {
             $body['parse_mode'] = $parseMode;
+        }
+
+        if ($replyMarkup !== null) {
+            $body['reply_markup'] = $replyMarkup;
         }
 
         return $this->httpRequest(

@@ -7,6 +7,7 @@ use Lkn\HookNotification\Core\Notification\Domain\NotificationTemplate;
 use Lkn\HookNotification\Core\NotificationReport\Domain\NotificationReportStatus;
 use Lkn\HookNotification\Core\Platforms\Common\AbstractPlatform;
 use Lkn\HookNotification\Core\Platforms\Common\PlatformNotificationSendResult;
+use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramHandoffService;
 use Lkn\HookNotification\Core\Platforms\Telegram\Infrastructure\TelegramApiClient;
 use Lkn\HookNotification\Core\Platforms\Telegram\Infrastructure\TelegramLinkRepository;
 
@@ -42,7 +43,8 @@ final class TelegramPlatform extends AbstractPlatform
 
         /** @var TelegramApiClient $apiClient */
         $apiClient = $this->apiClient;
-        $response  = $apiClient->sendMessage($chatId, $text, $settings->parseMode);
+        $replyMarkup = (new TelegramHandoffService())->buildInlineKeyboard(false);
+        $response    = $apiClient->sendMessage($chatId, $text, $settings->parseMode, $replyMarkup);
 
         $ok = is_array($response->body) && ($response->body['ok'] ?? false) === true;
 
