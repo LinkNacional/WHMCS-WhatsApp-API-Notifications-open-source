@@ -15,6 +15,11 @@
                     method="POST"
                     target="_self"
                 >
+                    <input
+                        type="hidden"
+                        name="token"
+                        value="{$csrf_token}"
+                    >
                     {* LANGUAGE *}
 
                     <div class="form-group">

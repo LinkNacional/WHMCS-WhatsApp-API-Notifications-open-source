@@ -20,6 +20,11 @@
                 target="_self"
                 method="POST"
             >
+                <input
+                    type="hidden"
+                    name="token"
+                    value="{$csrf_token}"
+                >
                 {foreach from=$page_params.whmcsHookParams item=$paramValue key=$paramName}
                     <input
                         type="hidden"

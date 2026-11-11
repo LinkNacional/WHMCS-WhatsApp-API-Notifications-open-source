@@ -37,6 +37,11 @@
         target="_self"
         method="POST"
     >
+        <input
+            type="hidden"
+            name="token"
+            value="{$csrf_token}"
+        >
         <div
             class="panel-group"
             id="accordion"

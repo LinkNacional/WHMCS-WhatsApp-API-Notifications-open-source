@@ -1,3 +1,8 @@
+# 4.7.1 - 11/11/26
+
+- Seguranca (GHSA-9wj3-3fjm-wh48): rotas administrativas deixam de aceitar alteracao de estado via GET. Requisicoes que alteram estado agora exigem POST com token de sessao e mesma origem, e os parametros de GET nao sao mais mesclados no corpo.
+- Formularios administrativos passam a enviar o token CSRF de sessao.
+
 # 4.6.1 - 30/08/26
 
 - Login via WhatsApp com OTP (passwordless): envio e verificação de código, bloqueio temporal, seleção de conta e frontend com chooser Email/WhatsApp/Google + intl-tel-input.

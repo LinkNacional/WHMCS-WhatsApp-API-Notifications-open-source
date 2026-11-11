@@ -36,7 +36,7 @@ final class BulkController extends BaseController
      */
     public function viewBulkMessageList(array $request)
     {
-        if (isset($request['send-now']) && !empty($request['bulk-id'])) {
+        if (lkn_hn_is_post_request() && isset($request['send-now']) && !empty($request['bulk-id'])) {
             /** @var int $bulkId */
             $bulkId = $request['bulk-id'];
 
@@ -114,7 +114,7 @@ final class BulkController extends BaseController
             );
         }
 
-        if (isset($request['create-bulk'])) {
+        if (lkn_hn_is_post_request() && isset($request['create-bulk'])) {
             if (empty($clientOptions)) {
                 $this->view->alert(
                     'warning',
@@ -174,7 +174,8 @@ final class BulkController extends BaseController
         $bulk = $this->bulkService->getBulk($bulkId);
 
         if (
-            isset($request['bulk-status'])
+            lkn_hn_is_post_request()
+            && isset($request['bulk-status'])
             && $bulk->status->value !== $request['bulk-status']
         ) {
             $result = $this->bulkService->updateBulkStatus(
@@ -197,7 +198,7 @@ final class BulkController extends BaseController
             unset($_POST['bulk-status']);
         }
 
-        if (!empty($request['resend-notification'])) {
+        if (lkn_hn_is_post_request() && !empty($request['resend-notification'])) {
             /** @var int $bulkMessageId */
             $bulkMessageId = $request['resend-notification'];
 
