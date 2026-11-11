@@ -34,6 +34,10 @@ final class ApiHandler extends Singleton {
                 TelegramStatusController::class,
                 'status',
             ],
+            'telegram/unlink' => [
+                TelegramStatusController::class,
+                'unlink',
+            ],
         ];
     }
 

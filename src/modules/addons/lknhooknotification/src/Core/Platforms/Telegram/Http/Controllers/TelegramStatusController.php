@@ -7,6 +7,22 @@ use Lkn\HookNotification\Core\Platforms\Telegram\Application\TelegramLinkService
 final class TelegramStatusController
 {
     /**
+     * @return array{ok: bool, error?: string}
+     */
+    public function unlink(array $request = []): array
+    {
+        $clientId = (int) (\WHMCS\Session::get('uid') ?? ($_SESSION['uid'] ?? 0));
+
+        if ($clientId <= 0) {
+            return ['ok' => false, 'error' => 'unauthorized'];
+        }
+
+        (new TelegramLinkService())->unlinkByClientId($clientId);
+
+        return ['ok' => true];
+    }
+
+    /**
      * @return array{linked: bool, username: string|null, error?: string}
      */
     public function status(array $request = []): array

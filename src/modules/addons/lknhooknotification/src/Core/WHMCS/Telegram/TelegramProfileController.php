@@ -22,17 +22,12 @@ final class TelegramProfileController
 
         $service   = new TelegramLinkService();
         $csrfToken = function_exists('generate_token') ? (string) generate_token() : '';
+        $config    = json_encode(
+            ['apiUrl' => $this->apiUrl(), 'token' => $csrfToken],
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+        );
 
-        if (lkn_hn_is_post_request() && isset($_POST['lkn_telegram_unlink'])) {
-            if (function_exists('check_token') && check_token()) {
-                $service->unlinkByClientId($clientId);
-            }
-
-            return '<script>window.location.href="clientarea.php?action=details";</script>';
-        }
-
-        $link  = $service->getLink($clientId);
-        $config = null;
+        $link = $service->getLink($clientId);
 
         if ($link) {
             $username = !empty($link->username) ? '@' . (string) $link->username : '';
@@ -41,11 +36,8 @@ final class TelegramProfileController
             $content = '<h3 style="margin-top:0;">Notificacoes via Telegram</h3>'
                 . '<p>Conectado ' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8')
                 . ' (' . htmlspecialchars($chatId, ENT_QUOTES, 'UTF-8') . ')</p>'
-                . '<form method="post" action="clientarea.php?action=details">'
-                . '<input type="hidden" name="token" value="' . htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') . '">'
-                . '<input type="hidden" name="lkn_telegram_unlink" value="1">'
-                . '<button type="submit" class="btn btn-default">Desconectar Telegram</button>'
-                . '</form>';
+                . '<button type="button" id="lkn-telegram-unlink-btn" class="btn btn-default">Desconectar Telegram</button>'
+                . '<div id="lkn-telegram-unlink-error" style="display:none; margin-top:10px; color:#a94442;">Nao foi possivel desconectar. Tente novamente.</div>';
         } else {
             $token = $service->generateToken($clientId);
             $url   = $token ? $service->buildDeepLink($token) : null;
@@ -62,14 +54,10 @@ final class TelegramProfileController
                 . '<div id="lkn-telegram-timeout" style="display:none; margin-top:10px;">'
                 . '<a href="clientarea.php?action=details">Ainda nao confirmou? Atualizar status</a></div>';
 
-            $config = json_encode(
-                ['apiUrl' => $this->apiUrl(), 'token' => $csrfToken],
-                JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
-            );
         }
 
-        $encoded = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $configJs = $config ?? 'null';
+        $encoded  = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $configJs = $config;
 
         return '<script>(function(){'
             . 'var cfg=' . $configJs . ';'
@@ -105,6 +93,15 @@ final class TelegramProfileController
             . 'document.getElementById("lkn-telegram-link-btn").addEventListener("click",start);'
             . 'document.addEventListener("visibilitychange",function(){if(!document.hidden){check();}});'
             . 'window.addEventListener("focus",check);'
+            . '}'
+            . 'var unlinkBtn=document.getElementById("lkn-telegram-unlink-btn");'
+            . 'if(cfg&&cfg.apiUrl&&unlinkBtn){'
+            . 'unlinkBtn.addEventListener("click",function(){'
+            . 'var err=document.getElementById("lkn-telegram-unlink-error");'
+            . 'var old=unlinkBtn.textContent;'
+            . 'unlinkBtn.disabled=true;unlinkBtn.textContent="Desconectando...";'
+            . 'fetch(cfg.apiUrl+"?endpoint=telegram/unlink",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"token=*** r.json();}).then(function(d){if(d&&d.ok){window.location.reload();}else{throw new Error("unlink");}}).catch(function(){unlinkBtn.disabled=false;unlinkBtn.textContent=old;if(err){err.style.display="block";}});'
+            . '});'
             . '}'
             . '}'
             . 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}'
