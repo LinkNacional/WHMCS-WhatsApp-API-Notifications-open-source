@@ -1,3 +1,8 @@
+# 4.7.2 - 11/11/26
+
+- Checagem de nova versao tambem ao abrir a home do modulo (throttle de 24h), sem depender apenas do cron diario.
+- Corrige o aviso de atualizacao que nao aparecia quando o DailyCronJob nao executava a checagem.
+
 # 4.7.1 - 11/11/26
 
 - Seguranca (GHSA-9wj3-3fjm-wh48): rotas administrativas deixam de aceitar alteracao de estado via GET. Requisicoes que alteram estado agora exigem POST com token de sessao e mesma origem, e os parametros de GET nao sao mais mesclados no corpo.

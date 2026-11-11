@@ -25,6 +25,8 @@ final class HomepageController extends BaseController
 
     public function viewHomepage(array $request): void
     {
+        $this->maybeCheckForUpdates();
+
         $licenseService = LicenseService::getInstance();
 
         $licenseCheckRes = $licenseService->isLicenseActive();
@@ -121,6 +123,23 @@ final class HomepageController extends BaseController
         }
 
         return null;
+    }
+
+    private function maybeCheckForUpdates(): void
+    {
+        try {
+            // Throttled internally to once per day. Running it here keeps the
+            // admin notice working even when the DailyCronJob hook does not run.
+            $this->handleNewVersionCheck();
+        } catch (\Throwable $th) {
+            lkn_hn_log(
+                'Version check error',
+                [],
+                [
+                    'error' => $th->__toString(),
+                ]
+            );
+        }
     }
 
     public function handleNewVersionCheck(): void
