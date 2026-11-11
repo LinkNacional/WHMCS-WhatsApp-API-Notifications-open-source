@@ -43,8 +43,16 @@ final class TelegramSettingsController extends BaseController
             }
         }
 
+        $status = [
+            'token' => $botToken !== '',
+            'username' => (string) lkn_hn_config(Settings::TELEGRAM_BOT_USERNAME) !== '',
+            'secret' => $secret !== '',
+            'enabled' => (bool) lkn_hn_config(Settings::TELEGRAM_ENABLE),
+        ];
+
         return $this->view->view('telegram_settings_actions', [
             'webhook_url' => $this->webhookUrl(),
+            'status' => $status,
         ])->render();
     }
 

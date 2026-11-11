@@ -6,7 +6,7 @@ return [
     [
         'setting' => Settings::TELEGRAM_ENABLE,
         'label' => lkn_hn_lang('Enable Telegram'),
-        'description' => lkn_hn_lang('Enable notifications through Telegram.'),
+        'description' => lkn_hn_lang('Enable notifications through Telegram. Configure the bot token/username and set the webhook before checking this.'),
         'type' => 'checkbox',
         'warning_on_unchecked' => lkn_hn_lang('This platform only will send messages when this is checked.'),
     ],
@@ -34,6 +34,11 @@ return [
         'description' => lkn_hn_lang('HTML or Markdown. Leave empty for plain text.'),
         'type' => 'text',
         'default' => 'HTML',
+    ],
+    [
+        'separator' => true,
+        'title' => lkn_hn_lang('Proxy (optional)'),
+        'description' => lkn_hn_lang('Leave Proxy Type as None unless this server needs an outbound proxy.'),
     ],
     [
         'setting' => Settings::TELEGRAM_PROXY_TYPE,

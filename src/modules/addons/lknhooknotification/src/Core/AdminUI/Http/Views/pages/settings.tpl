@@ -21,6 +21,7 @@
         class="form-horizontal"
         method="post"
         target="_self"
+        autocomplete="off"
     >
         <input
             type="hidden"
@@ -89,6 +90,10 @@
                                     id="{$setting['id']}"
                                     name="{$setting['id']}"
                                     value="{$setting['current']}"
+                                    autocomplete="{if $setting['type'] === 'password'}new-password{else}off{/if}"
+                                    data-lpignore="true"
+                                    data-1p-ignore="true"
+                                    spellcheck="false"
                                 >
                                 {if $setting['below_field']}
                                     <span class="help-block">{$setting['below_field']['title']}</span>
