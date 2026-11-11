@@ -2,6 +2,7 @@
 
 - Seguranca (GHSA-9wj3-3fjm-wh48): rotas administrativas deixam de aceitar alteracao de estado via GET. Requisicoes que alteram estado agora exigem POST com token de sessao e mesma origem, e os parametros de GET nao sao mais mesclados no corpo.
 - Formularios administrativos passam a enviar o token CSRF de sessao.
+- Corrige o dono do servico nas notificacoes de modulo (AfterModuleSuspend/AfterModuleUnsuspend): getClientIdByModuleId() consulta tblhosting.id em vez de packageid (issue #161).
 
 # 4.6.1 - 30/08/26
 
