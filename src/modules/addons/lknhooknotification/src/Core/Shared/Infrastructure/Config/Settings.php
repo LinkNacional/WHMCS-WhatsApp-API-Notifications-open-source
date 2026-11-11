@@ -54,6 +54,7 @@ enum Settings: string
     case TELEGRAM_BOT_USERNAME  = 'telegram_bot_username';
     case TELEGRAM_WEBHOOK_SECRET = 'telegram_webhook_secret';
     case TELEGRAM_PARSE_MODE    = 'telegram_parse_mode';
+    case TELEGRAM_LINK_SUCCESS_MESSAGE = 'telegram_link_success_message';
 
     case TELEGRAM_PROXY_TYPE     = 'telegram_proxy_type';
     case TELEGRAM_PROXY_HOST     = 'telegram_proxy_host';

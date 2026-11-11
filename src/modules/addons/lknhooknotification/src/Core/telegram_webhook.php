@@ -47,7 +47,13 @@ try {
         $result = $linkService->handleStart($token, $chatId, $username);
 
         if ($result['ok']) {
-            $apiClient->sendMessage($chatId, 'Conta vinculada com sucesso ao WHMCS!');
+            $successMessage = trim((string) lkn_hn_config(Settings::TELEGRAM_LINK_SUCCESS_MESSAGE));
+
+            if ($successMessage === '') {
+                $successMessage = 'Conta vinculada com sucesso ao WHMCS!';
+            }
+
+            $apiClient->sendMessage($chatId, $successMessage);
         } else {
             $apiClient->sendMessage($chatId, 'Nao foi possivel vincular. Gere um novo link no seu perfil.');
         }

@@ -36,15 +36,14 @@ final class TelegramProfileController
             $chatId   = $this->maskChatId((string) $link->chat_id);
             $token    = function_exists('generate_token') ? (string) generate_token() : '';
 
-            $html = '<div class="alert alert-success" style="margin-top:20px;">'
-                . '<h4>Notificacoes via Telegram</h4>'
+            $content = '<h3 style="margin-top:0;">Notificacoes via Telegram</h3>'
                 . '<p>Conectado ' . htmlspecialchars($username, ENT_QUOTES, 'UTF-8')
                 . ' (' . htmlspecialchars($chatId, ENT_QUOTES, 'UTF-8') . ')</p>'
                 . '<form method="post" action="clientarea.php?action=details">'
                 . '<input type="hidden" name="token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">'
                 . '<input type="hidden" name="lkn_telegram_unlink" value="1">'
                 . '<button type="submit" class="btn btn-default">Desconectar Telegram</button>'
-                . '</form></div>';
+                . '</form>';
         } else {
             $token = $service->generateToken($clientId);
             $url   = $token ? $service->buildDeepLink($token) : null;
@@ -53,20 +52,43 @@ final class TelegramProfileController
                 return null;
             }
 
-            $html = '<div class="alert alert-info" style="margin-top:20px;">'
-                . '<h4>Notificacoes via Telegram</h4>'
+            $content = '<h3 style="margin-top:0;">Notificacoes via Telegram</h3>'
                 . '<p>Vincule sua conta do Telegram para receber notificacoes por la tambem.</p>'
                 . '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">'
-                . 'Vincular Telegram</a></div>';
+                . 'Vincular Telegram</a>';
         }
 
-        $encoded = json_encode($html, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $encoded = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
-        return '<script>document.addEventListener("DOMContentLoaded",function(){'
-            . 'var h=' . $encoded . ';'
-            . 'var t=document.querySelector("#frmMyDetails")||document.querySelector(".client-details")||document.querySelector("#main-body");'
-            . 'if(t){t.insertAdjacentHTML("beforeend",h);}'
-            . '});</script>';
+        return '<script>(function(){'
+            . 'if(document.getElementById("lkn-telegram-profile-block")){return;}'
+            . 'var content=' . $encoded . ';'
+            . 'var target=null;'
+            . 'var headings=document.querySelectorAll("h2,h3,h4");'
+            . 'for(var i=0;i<headings.length;i++){'
+            . 'var txt=(headings[i].textContent||"").toLowerCase();'
+            . 'if(txt.indexOf("preferências de e-mail")!==-1||txt.indexOf("preferencias de e-mail")!==-1||txt.indexOf("email preferences")!==-1){'
+            . 'target=headings[i].closest(".card, .panel");break;'
+            . '}'
+            . '}'
+            . 'if(!target){'
+            . 'var cards=document.querySelectorAll(".card, .panel");'
+            . 'for(var j=0;j<cards.length;j++){var t=(cards[j].textContent||"").toLowerCase();'
+            . 'if(t.indexOf("preferências de e-mail")!==-1||t.indexOf("preferencias de e-mail")!==-1||t.indexOf("email preferences")!==-1){target=cards[j];break;}'
+            . '}'
+            . '}'
+            . 'var isCard=target?target.classList.contains("card"):true;'
+            . 'var wrapper=document.createElement("div");'
+            . 'wrapper.id="lkn-telegram-profile-block";'
+            . 'wrapper.className=isCard?"card":"panel panel-default";'
+            . 'wrapper.style.marginBottom="20px";'
+            . 'var body=document.createElement("div");'
+            . 'body.className=isCard?"card-body":"panel-body";'
+            . 'body.innerHTML=content;'
+            . 'wrapper.appendChild(body);'
+            . 'if(target&&target.parentNode){target.parentNode.insertBefore(wrapper,target);}'
+            . 'else{var fallback=document.querySelector("#frmMyDetails")||document.querySelector(".client-details")||document.querySelector("#main-body");if(fallback){fallback.appendChild(wrapper);}}'
+            . '})();</script>';
     }
 
     public function handleClientDelete(array $vars): void

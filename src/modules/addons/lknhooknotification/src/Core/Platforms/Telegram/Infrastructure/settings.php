@@ -36,6 +36,12 @@ return [
         'default' => 'HTML',
     ],
     [
+        'setting' => Settings::TELEGRAM_LINK_SUCCESS_MESSAGE,
+        'label' => lkn_hn_lang('Link success message'),
+        'description' => lkn_hn_lang('Message sent by the bot after a client links the Telegram account. Leave empty to use the default.'),
+        'type' => 'text',
+    ],
+    [
         'separator' => true,
         'title' => lkn_hn_lang('Proxy (optional)'),
         'description' => lkn_hn_lang('Leave Proxy Type as None unless this server needs an outbound proxy.'),
