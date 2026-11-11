@@ -1,3 +1,8 @@
+# 4.8.1 - 11/11/26
+
+- Corrige a pagina de clientes vinculados do Telegram no admin (layout compartilhado) e remove o item duplicado do menu de configuracoes.
+- Acesso ao recurso permanece em Configuracoes do Telegram > Manage linked clients.
+
 # 4.8.0 - 11/11/26
 
 - Nova plataforma Telegram: bot dedicado por instalacao, vinculo self-service por deep link, webhook com secret e envio de texto.
