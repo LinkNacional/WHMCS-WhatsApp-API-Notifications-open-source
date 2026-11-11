@@ -377,7 +377,13 @@ function getClientIdByOrderId(int $orderId): int
 
 function getClientIdByModuleId(int $moduleId): int
 {
-    return Capsule::table('tblhosting')->where('packageid', $moduleId)->first('userid')->userid;
+    $service = Capsule::table('tblhosting')->where('id', $moduleId)->first('userid');
+
+    if ($service === null) {
+        throw new \RuntimeException("Service {$moduleId} not found in tblhosting");
+    }
+
+    return $service->userid;
 }
 
 function getOrderIdByInvoiceId(int $invoiceId): ?int

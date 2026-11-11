@@ -113,13 +113,30 @@
                                             </a>
                                             {if "now"|date_format:"%Y-%m-%d %H:%M:%S" < $bulk->startAt->format('Y-m-d H:i:s')}
                                                 &#8226;
-                                                <a
-                                                    class="btn btn-link btn-sm"
-                                                    href="?module=lknhooknotification&page=bulk/list&send-now=1&bulk-id={$bulk->id}"
-                                                    style="padding: 0px; line-height: 0px;"
-                                                >
-                                                    {lkn_hn_lang text="Send now"}
-                                                </a>
+                                                <form method="POST" style="display: inline;">
+                                                    <input
+                                                        type="hidden"
+                                                        name="lkn_hn_token"
+                                                        value="{$csrf_token}"
+                                                    >
+                                                    <input
+                                                        type="hidden"
+                                                        name="send-now"
+                                                        value="1"
+                                                    >
+                                                    <input
+                                                        type="hidden"
+                                                        name="bulk-id"
+                                                        value="{$bulk->id}"
+                                                    >
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-link btn-sm"
+                                                        style="padding: 0px; line-height: 0px;"
+                                                    >
+                                                        {lkn_hn_lang text="Send now"}
+                                                    </button>
+                                                </form>
                                             {/if}
                                         </td>
                                     </tr>

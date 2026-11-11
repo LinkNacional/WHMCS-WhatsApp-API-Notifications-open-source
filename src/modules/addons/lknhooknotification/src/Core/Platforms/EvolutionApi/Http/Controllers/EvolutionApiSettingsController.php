@@ -18,9 +18,10 @@ final class EvolutionApiSettingsController extends BaseController
 
     public function handle(array $request): string
     {
-        $isDisconnectInstanceOperation = $request['disconnect-instance'];
+        $isDisconnectInstanceOperation = lkn_hn_is_post_request()
+            && isset($request['disconnect-instance']);
 
-        if (isset($isDisconnectInstanceOperation)) {
+        if ($isDisconnectInstanceOperation) {
             $result = $this->evolutionApiSetupService->disconnectInstance();
         }
 

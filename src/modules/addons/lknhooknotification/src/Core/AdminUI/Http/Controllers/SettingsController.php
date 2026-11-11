@@ -52,7 +52,7 @@ final class SettingsController extends BaseController
         ?string $subpage,
         array $request
     ) {
-        if (!empty($request)) {
+        if (!empty($request) && lkn_hn_is_post_request()) {
             $result  = $this->settingsService->updateSettings($platform, $subpage, $request);
             $success = $result->code === 'success';
 

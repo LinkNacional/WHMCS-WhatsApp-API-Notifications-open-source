@@ -166,7 +166,7 @@ function lknhooknotification_activate(): array
 function lknhooknotification_output(array $vars): void
 {
     try {
-        $receivedRoute = isset($_REQUEST['page']) ? strip_tags($_REQUEST['page']) : 'home';
+        $receivedRoute = isset($_GET['page']) ? strip_tags((string) $_GET['page']) : 'home';
 
         echo (new AdminUIRenderer())->getView($receivedRoute);
     } catch (Throwable $th) {

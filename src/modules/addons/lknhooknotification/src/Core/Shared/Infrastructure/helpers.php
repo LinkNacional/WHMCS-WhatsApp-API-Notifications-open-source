@@ -329,3 +329,77 @@ function lkn_hn_mask_value(string $contact): string
         return str_repeat('*', strlen($contact) - 4) . substr($contact, -4);
     }
 };
+
+function lkn_hn_is_post_request(): bool
+{
+    return strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET')) === 'POST';
+}
+
+/**
+ * CSRF token bound to the current admin session.
+ *
+ * Generated once per session so several admin tabs can share it.
+ */
+function lkn_hn_admin_csrf_token(): string
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        @session_start();
+    }
+
+    if (
+        !isset($_SESSION['lkn_hn_admin_csrf'])
+        || !is_string($_SESSION['lkn_hn_admin_csrf'])
+        || $_SESSION['lkn_hn_admin_csrf'] === ''
+    ) {
+        $_SESSION['lkn_hn_admin_csrf'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['lkn_hn_admin_csrf'];
+}
+
+function lkn_hn_admin_csrf_token_is_valid($token): bool
+{
+    if (!is_string($token) || $token === '') {
+        return false;
+    }
+
+    $expected = $_SESSION['lkn_hn_admin_csrf'] ?? null;
+
+    return is_string($expected) && $expected !== '' && hash_equals($expected, $token);
+}
+
+/**
+ * Defense in depth for state-changing admin requests.
+ *
+ * When the browser sends Origin/Referer, its host must match the WHMCS
+ * SystemURL host. Requests without either header still require a valid
+ * CSRF token, which is checked by the caller.
+ */
+function lkn_hn_request_is_same_origin(): bool
+{
+    $origin  = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+
+    $requestHost = '';
+
+    if (is_string($origin) && $origin !== '') {
+        $requestHost = (string) parse_url($origin, PHP_URL_HOST);
+    } elseif (is_string($referer) && $referer !== '') {
+        $requestHost = (string) parse_url($referer, PHP_URL_HOST);
+    }
+
+    if ($requestHost === '') {
+        return true;
+    }
+
+    $systemUrl  = Capsule::table('tblconfiguration')->where('setting', 'SystemURL')->value('value');
+    $systemHost = is_string($systemUrl) && $systemUrl !== ''
+        ? (string) parse_url($systemUrl, PHP_URL_HOST)
+        : '';
+
+    if ($systemHost === '') {
+        return true;
+    }
+
+    return strcasecmp($requestHost, $systemHost) === 0;
+}

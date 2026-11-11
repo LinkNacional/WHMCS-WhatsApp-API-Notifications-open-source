@@ -63,7 +63,7 @@ final class NotificationSender extends Singleton {
             return $this->send($notification, $whmcsHookParams);
         } catch (Throwable $th) {
             lkn_hn_log(
-                'Dispatch error',
+                'Dispatch error: ' . $th->getMessage(),
                 [
                     'notification' => $notification,
                     'whmcs_hook_params' => $whmcsHookParams,

@@ -12,6 +12,11 @@
     >
         <input
             type="hidden"
+            name="lkn_hn_token"
+            value="{$csrf_token}"
+        >
+        <input
+            type="hidden"
             name="download-last-100-logs"
         >
         <button
