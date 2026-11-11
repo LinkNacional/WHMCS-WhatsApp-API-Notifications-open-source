@@ -54,7 +54,26 @@ try {
                 $successMessage = 'Conta vinculada com sucesso ao WHMCS!';
             }
 
-            $apiClient->sendMessage($chatId, $successMessage);
+            $systemUrl = rtrim((string) \WHMCS\Database\Capsule::table('tblconfiguration')
+                ->where('setting', 'SystemURL')
+                ->value('value'), '/');
+
+            $returnKeyboard = null;
+
+            if ($systemUrl !== '') {
+                $returnKeyboard = [
+                    'inline_keyboard' => [
+                        [
+                            [
+                                'text' => 'Voltar ao WHMCS',
+                                'url' => $systemUrl . '/clientarea.php?action=details',
+                            ],
+                        ],
+                    ],
+                ];
+            }
+
+            $apiClient->sendMessage($chatId, $successMessage, null, $returnKeyboard);
         } else {
             $apiClient->sendMessage($chatId, 'Nao foi possivel vincular. Gere um novo link no seu perfil.');
         }
