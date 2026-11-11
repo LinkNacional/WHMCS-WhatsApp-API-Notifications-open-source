@@ -1,3 +1,9 @@
+# 4.8.0 - 11/11/26
+
+- Nova plataforma Telegram: bot dedicado por instalacao, vinculo self-service por deep link, webhook com secret e envio de texto.
+- Multi-plataforma: uma notificacao pode ter templates no WhatsApp e no Telegram; envio nas duas quando o cliente tiver os dois contatos.
+- Admin: configuracao do bot/webhook, lista de clientes vinculados e desvinculo.
+
 # 4.7.2 - 11/11/26
 
 - Checagem de nova versao tambem ao abrir a home do modulo (throttle de 24h), sem depender apenas do cron diario.

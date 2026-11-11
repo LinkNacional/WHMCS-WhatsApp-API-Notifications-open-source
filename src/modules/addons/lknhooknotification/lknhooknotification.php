@@ -133,6 +133,10 @@ function lknhooknotification_upgrade($vars): void
         DatabaseUpgrade::v461();
     }
 
+    if (version_compare($currentlyInstalledVersion, '4.8.0', '<')) {
+        DatabaseUpgrade::v480();
+    }
+
     (new Smarty())->clearAllCache();
     header('Cache-Control: no-cache, must-revalidate');
     header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');

@@ -49,6 +49,19 @@ enum Settings: string
     case BAILEYS_API_KEY            = 'baileys_api_key';
     case BAILEYS_WP_CUSTOM_FIELD_ID = 'baileys_wp_custom_field_id';
 
+    case TELEGRAM_ENABLE        = 'telegram_enable';
+    case TELEGRAM_BOT_TOKEN     = 'telegram_bot_token';
+    case TELEGRAM_BOT_USERNAME  = 'telegram_bot_username';
+    case TELEGRAM_WEBHOOK_SECRET = 'telegram_webhook_secret';
+    case TELEGRAM_PARSE_MODE    = 'telegram_parse_mode';
+    case TELEGRAM_LINK_SUCCESS_MESSAGE = 'telegram_link_success_message';
+
+    case TELEGRAM_PROXY_TYPE     = 'telegram_proxy_type';
+    case TELEGRAM_PROXY_HOST     = 'telegram_proxy_host';
+    case TELEGRAM_PROXY_PORT     = 'telegram_proxy_port';
+    case TELEGRAM_PROXY_USERNAME = 'telegram_proxy_username';
+    case TELEGRAM_PROXY_PASSWORD = '***';
+
     case ENABLE_LOG                        = 'enable_log';
     case LKN_LICENSE                       = 'lkn_license';
     case DEFAULT_CLIENT_NAME               = 'default_client_name';

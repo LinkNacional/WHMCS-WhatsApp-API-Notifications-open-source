@@ -30,6 +30,10 @@ final class PlatformService
             $enabledPlatforms[] = Platforms::WHATSAPP;
         }
 
+        if (lkn_hn_config(Settings::TELEGRAM_ENABLE)) {
+            $enabledPlatforms[] = Platforms::TELEGRAM;
+        }
+
         return $enabledPlatforms;
     }
 }

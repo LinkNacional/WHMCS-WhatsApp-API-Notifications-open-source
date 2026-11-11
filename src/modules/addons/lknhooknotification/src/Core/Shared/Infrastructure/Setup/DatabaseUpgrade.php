@@ -610,4 +610,52 @@ final class DatabaseUpgrade
             lkn_hn_log('Database 4.6.1 upgrade failed', null, $th->__toString());
         }
     }
+
+    // 4.8.0: Telegram links/tokens and multi-platform templates.
+    public static function v480(): void
+    {
+        try {
+            $pdo = Capsule::connection()->getPdo();
+
+            $pdo->exec('CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_telegram_links (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                client_id INT NOT NULL,
+                chat_id VARCHAR(64) NOT NULL,
+                username VARCHAR(64) NULL,
+                linked_at DATETIME NOT NULL,
+                consent_at DATETIME NULL,
+                last_error VARCHAR(255) NULL,
+                UNIQUE KEY uniq_client (client_id),
+                UNIQUE KEY uniq_chat (chat_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+            $pdo->exec('CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_telegram_link_tokens (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                client_id INT NOT NULL,
+                token_hash CHAR(64) NOT NULL,
+                expires_at DATETIME NOT NULL,
+                used_at DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                UNIQUE KEY uniq_token (token_hash),
+                KEY idx_client (client_id),
+                KEY idx_expires (expires_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+            try {
+                $pdo->exec('ALTER TABLE mod_lkn_hook_notification_localized_tpls ADD UNIQUE KEY uniq_notif_lang_platform (notif_code(191), lang(191), platform(191))');
+            } catch (Throwable $th) {
+                // Key may already exist or existing rows may collide; a regular
+                // index still lets the app upsert by notif/lang/platform.
+                try {
+                    $pdo->exec('ALTER TABLE mod_lkn_hook_notification_localized_tpls ADD KEY idx_notif_lang_platform (notif_code(191), lang(191), platform(191))');
+                } catch (Throwable $th2) {
+                    // Index already exists: nothing to do.
+                }
+            }
+
+            lkn_hn_log('Database 4.8.0 success', null, ['telegram' => true]);
+        } catch (Throwable $th) {
+            lkn_hn_log('Database 4.8.0 upgrade failed', null, $th->__toString());
+        }
+    }
 }

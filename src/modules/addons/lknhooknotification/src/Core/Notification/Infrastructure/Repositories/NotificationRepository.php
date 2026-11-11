@@ -19,6 +19,7 @@ class NotificationRepository extends BaseRepository
                 [
                     'notif_code' => $notiifcationCode,
                     'lang' => $locale,
+                    'platform' => $platform,
                 ],
                 [
                     'platform' => $platform,
@@ -139,13 +140,18 @@ class NotificationRepository extends BaseRepository
 
     public function deleteNotificationTemplate(
         string $notificationCode,
-        string $templateLocale
+        string $templateLocale,
+        ?string $platform = null
     ): bool {
-        return $this->query
+        $query = $this->query
             ->table('mod_lkn_hook_notification_localized_tpls')
             ->where('notif_code', $notificationCode)
-            ->where('lang', $templateLocale)
-            ->limit(1)
-            ->delete();
+            ->where('lang', $templateLocale);
+
+        if ($platform !== null) {
+            $query = $query->where('platform', $platform);
+        }
+
+        return $query->limit(1)->delete();
     }
 }
