@@ -53,14 +53,12 @@ final class TelegramProfileController
                 . '<div id="lkn-telegram-wait" style="display:none; margin-top:10px;">Aguardando confirmacao no Telegram...</div>'
                 . '<div id="lkn-telegram-timeout" style="display:none; margin-top:10px;">'
                 . '<a href="clientarea.php?action=details">Ainda nao confirmou? Atualizar status</a></div>';
-
         }
 
-        $encoded  = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-        $configJs = $config;
+        $encoded = json_encode($content, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         return '<script>(function(){'
-            . 'var cfg=' . $configJs . ';'
+            . 'var cfg=' . $config . ';'
             . 'function init(){'
             . 'if(document.getElementById("lkn-telegram-profile-block")){return;}'
             . 'var content=' . $encoded . ';'
@@ -100,7 +98,7 @@ final class TelegramProfileController
             . 'var err=document.getElementById("lkn-telegram-unlink-error");'
             . 'var old=unlinkBtn.textContent;'
             . 'unlinkBtn.disabled=true;unlinkBtn.textContent="Desconectando...";'
-            . 'fetch(cfg.apiUrl+"?endpoint=telegram/unlink",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"token=*** r.json();}).then(function(d){if(d&&d.ok){window.location.reload();}else{throw new Error("unlink");}}).catch(function(){unlinkBtn.disabled=false;unlinkBtn.textContent=old;if(err){err.style.display="block";}});'
+            . 'fetch(cfg.apiUrl+"?endpoint=telegram/unlink",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"token="+encodeURIComponent(cfg.token)}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){window.location.reload();}else{throw new Error("unlink");}}).catch(function(){unlinkBtn.disabled=false;unlinkBtn.textContent=old;if(err){err.style.display="block";}});'
             . '});'
             . '}'
             . '}'
