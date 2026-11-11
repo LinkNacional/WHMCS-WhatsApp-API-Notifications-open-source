@@ -7,6 +7,7 @@ use Lkn\HookNotification\Core\Platforms\Chatwoot\Domain\ChatwootSettings;
 use Lkn\HookNotification\Core\Platforms\Chatwoot\Domain\LiveChatSettings;
 use Lkn\HookNotification\Core\Platforms\EvolutionApi\Domain\EvolutionApiSettings;
 use Lkn\HookNotification\Core\Platforms\MetaWhatsApp\Domain\MetaWhatsAppSettings;
+use Lkn\HookNotification\Core\Platforms\Telegram\Domain\TelegramSettings;
 use Lkn\HookNotification\Core\Platforms\Module\Domain\ModuleSettings;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Settings;
 
@@ -75,6 +76,17 @@ final class PlatformSettingsFactory
             $liveChatSettings,
             $moduleSettings,
             lkn_hn_config(Settings::CW_ACCOUNT_ID)
+        );
+    }
+
+    public static function makeTelegramSettings(array $raw): TelegramSettings
+    {
+        return new TelegramSettings(
+            lkn_hn_config(Settings::TELEGRAM_ENABLE),
+            lkn_hn_config(Settings::TELEGRAM_BOT_TOKEN),
+            lkn_hn_config(Settings::TELEGRAM_BOT_USERNAME),
+            lkn_hn_config(Settings::TELEGRAM_WEBHOOK_SECRET),
+            lkn_hn_config(Settings::TELEGRAM_PARSE_MODE),
         );
     }
 

@@ -88,7 +88,40 @@ final class DatabaseSetup
                     platform VARCHAR(255) NOT NULL,
                     platform_payload TEXT NULL,
                     lang VARCHAR(255) NOT NULL,
-                    tpl LONGTEXT NULL
+                    tpl LONGTEXT NULL,
+                    UNIQUE KEY uniq_notif_lang_platform (notif_code(191), lang(191), platform(191))
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_telegram_links (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    client_id INT NOT NULL,
+                    chat_id VARCHAR(64) NOT NULL,
+                    username VARCHAR(64) NULL,
+                    linked_at DATETIME NOT NULL,
+                    consent_at DATETIME NULL,
+                    last_error VARCHAR(255) NULL,
+                    UNIQUE KEY uniq_client (client_id),
+                    UNIQUE KEY uniq_chat (chat_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+            );
+
+            $statement->execute();
+
+            $statement = $pdo->prepare(
+                'CREATE TABLE IF NOT EXISTS mod_lkn_hook_notification_telegram_link_tokens (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    client_id INT NOT NULL,
+                    token_hash CHAR(64) NOT NULL,
+                    expires_at DATETIME NOT NULL,
+                    used_at DATETIME NULL,
+                    created_at DATETIME NOT NULL,
+                    UNIQUE KEY uniq_token (token_hash),
+                    KEY idx_client (client_id),
+                    KEY idx_expires (expires_at)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
             );
 

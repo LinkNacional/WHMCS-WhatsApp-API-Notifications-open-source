@@ -45,6 +45,8 @@ final class NotificationController extends BaseController
             'platform_list' => $this->platformService->getEnabledPlatforms(),
         ];
 
+        $requestedPlatform = Platforms::tryFrom((string) ($request['platform'] ?? ''));
+
         if ($editingLocale === 'new') {
             if (!empty($request['locale'])) {
                 header(
@@ -97,10 +99,16 @@ final class NotificationController extends BaseController
             return;
         }
 
-        $foundExistingTemplate = $this->notificationViewService->findTemplateByLang(
-            $editingNotification,
-            $editingLocale
-        );
+        $foundExistingTemplate = $requestedPlatform
+            ? $this->notificationViewService->findTemplateByLangAndPlatform(
+                $editingNotification,
+                $editingLocale,
+                $requestedPlatform
+            )
+            : $this->notificationViewService->findTemplateByLang(
+                $editingNotification,
+                $editingLocale
+            );
 
         if (
             lkn_hn_is_post_request() &&
@@ -141,18 +149,22 @@ final class NotificationController extends BaseController
             }
         }
 
-        $foundExistingTemplate = $this->notificationViewService->findTemplateByLang(
-            $editingNotification,
-            $editingLocale
-        );
+        $foundExistingTemplate = $requestedPlatform
+            ? $this->notificationViewService->findTemplateByLangAndPlatform(
+                $editingNotification,
+                $editingLocale,
+                $requestedPlatform
+            )
+            : $this->notificationViewService->findTemplateByLang(
+                $editingNotification,
+                $editingLocale
+            );
 
         $editingTemplate = null;
 
         if (!$foundExistingTemplate) {
-            $platform = Platforms::tryFrom($request['platform']);
-
             $editingTemplate = new NotificationTemplate(
-                $platform,
+                $requestedPlatform,
                 $editingLocale,
                 '',
                 []
@@ -202,9 +214,12 @@ final class NotificationController extends BaseController
         $templateLocale = $request['template-locale'];
 
         if (lkn_hn_is_post_request() && isset($request['delete-template'])) {
+            $deletePlatform = Platforms::tryFrom((string) ($request['platform'] ?? ''));
+
             $templateDeletionResult = $this->notificationService->handleTemplateDelete(
                 $notificationCode,
                 $templateLocale,
+                $deletePlatform,
             );
 
             $alert = [

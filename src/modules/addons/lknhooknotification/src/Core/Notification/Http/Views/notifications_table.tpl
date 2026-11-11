@@ -171,7 +171,7 @@
                                                                         {if !$page_params.must_block_edit_notification}
                                                                             <a
                                                                                 class="btn btn-primary btn-xs"
-                                                                                href="{$lkn_hn_base_endpoint}&page=notifications/{$notification->code}/templates/{$template->lang}"
+                                                                                href="{$lkn_hn_base_endpoint}&page=notifications/{$notification->code}/templates/{$template->lang}&platform={$template->platform->value}"
                                                                             >
                                                                                 {lkn_hn_lang text="Edit"}
                                                                             </a>
@@ -203,6 +203,12 @@
                                                                                 type="hidden"
                                                                                 name="template-locale"
                                                                                 value="{$template->lang}"
+                                                                            >
+
+                                                                            <input
+                                                                                type="hidden"
+                                                                                name="platform"
+                                                                                value="{$template->platform->value}"
                                                                             >
                                                                         </form>
 

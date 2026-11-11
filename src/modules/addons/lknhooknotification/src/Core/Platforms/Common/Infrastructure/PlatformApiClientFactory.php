@@ -10,6 +10,8 @@ use Lkn\HookNotification\Core\Platforms\EvolutionApi\Domain\EvolutionApiSettings
 use Lkn\HookNotification\Core\Platforms\EvolutionApi\Infrastructure\EvolutionApiClient;
 use Lkn\HookNotification\Core\Platforms\MetaWhatsApp\Domain\MetaWhatsAppSettings;
 use Lkn\HookNotification\Core\Platforms\MetaWhatsApp\Infrastructure\MetaWhatsAppApiClient;
+use Lkn\HookNotification\Core\Platforms\Telegram\Domain\TelegramSettings;
+use Lkn\HookNotification\Core\Platforms\Telegram\Infrastructure\TelegramApiClient;
 
 final class PlatformApiClientFactory
 {
@@ -31,6 +33,11 @@ final class PlatformApiClientFactory
             $settings->userAccessToken,
             $settings->businessAccountId,
         );
+    }
+
+    public function makeTelegramClient(TelegramSettings $settings): TelegramApiClient
+    {
+        return new TelegramApiClient((string) $settings->botToken);
     }
 
     public function makeChatwootClient(ChatwootSettings $settings): ChatwootApiClient

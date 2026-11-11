@@ -5,6 +5,7 @@ namespace Lkn\HookNotification\Core\AdminUI\Http\Controllers;
 use Lkn\HookNotification\Core\Platforms\Chatwoot\Http\Controllers\ChatwootSettingsController;
 use Lkn\HookNotification\Core\Platforms\EvolutionApi\Http\Controllers\EvolutionApiSettingsController;
 use Lkn\HookNotification\Core\Platforms\MetaWhatsApp\Http\Controllers\MetaWhatsAppSettingsController;
+use Lkn\HookNotification\Core\Platforms\Telegram\Http\Controllers\TelegramSettingsController;
 use Lkn\HookNotification\Core\Shared\Application\SettingsService;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Config\Platforms;
 use Lkn\HookNotification\Core\Shared\Infrastructure\Interfaces\BaseController;
@@ -52,7 +53,7 @@ final class SettingsController extends BaseController
         ?string $subpage,
         array $request
     ) {
-        if (!empty($request) && lkn_hn_is_post_request()) {
+        if (!empty($request) && lkn_hn_is_post_request() && !isset($request['telegram-action'])) {
             $result  = $this->settingsService->updateSettings($platform, $subpage, $request);
             $success = $result->code === 'success';
 
@@ -108,6 +109,8 @@ final class SettingsController extends BaseController
             return new MetaWhatsAppSettingsController();
         } elseif ($platform === Platforms::CHATWOOT) {
             return new ChatwootSettingsController();
+        } elseif ($platform === Platforms::TELEGRAM) {
+            return new TelegramSettingsController();
         }
 
         return null;
