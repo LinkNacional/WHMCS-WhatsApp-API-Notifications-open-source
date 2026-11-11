@@ -13,6 +13,9 @@ final class TelegramLinksController extends BaseController
     public function __construct(View $view)
     {
         parent::__construct($view);
+
+        // The links page uses the shared admin layout, not the platform views.
+        $this->view->setTemplateDir(dirname(__DIR__, 4) . '/AdminUI/Http/Views');
     }
 
     public function viewLinks(array $request): void
