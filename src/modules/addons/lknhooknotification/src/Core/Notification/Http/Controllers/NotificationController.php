@@ -37,7 +37,7 @@ final class NotificationController extends BaseController
         if (!$editingNotification) {
             lkn_hn_redirect_to_404();
 
-            return;
+            exit;
         }
 
         $viewParams = [
@@ -56,7 +56,7 @@ final class NotificationController extends BaseController
                     . $request['locale']
                 );
 
-                return;
+                exit;
             }
 
             $this->view->view(
@@ -79,12 +79,12 @@ final class NotificationController extends BaseController
                 . $request['locale']
             );
 
-            return;
+            exit;
         } elseif ($editingLocale === 'first' && $editingNotification) {
             if (count($editingNotification->templates) === 0) {
                 lkn_hn_redirect_to_404();
 
-                return;
+                exit;
             }
 
             $firstTemplateLang = $editingNotification->templates[0]->lang;
@@ -96,7 +96,7 @@ final class NotificationController extends BaseController
                 . $firstTemplateLang
             );
 
-            return;
+            exit;
         }
 
         $foundExistingTemplate = $requestedPlatform

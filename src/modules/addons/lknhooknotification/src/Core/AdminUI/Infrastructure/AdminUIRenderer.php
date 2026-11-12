@@ -78,6 +78,15 @@ final class AdminUIRenderer
             ...$controllerMethodParams
         );
 
+        // A controller may have issued a redirect and returned. In that case
+        // there is no template to render; rendering would access an
+        // uninitialized View::$renderFilename.
+        foreach (headers_list() as $header) {
+            if (stripos($header, 'Location:') === 0) {
+                return '';
+            }
+        }
+
         $controllerInstance->view->assign('lkn_hn', [
             'system_url' => Capsule::table('tblconfiguration')->where('setting', 'SystemURL')->first(['value'])->value,
             'navbar' => require $this->navbarPath,
