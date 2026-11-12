@@ -10,7 +10,7 @@ use Smarty;
 final class View
 {
     private Smarty $smarty;
-    private string $renderFilename;
+    private ?string $renderFilename = null;
 
     public function __construct()
     {
@@ -86,6 +86,16 @@ final class View
 
     public function render(): string
     {
+        if ($this->renderFilename === null || $this->renderFilename === '') {
+            if (function_exists('lkn_hn_log')) {
+                lkn_hn_log('View::render called without a template', []);
+            }
+
+            return '<div class="alert alert-danger" style="margin:15px;">'
+                . 'Unable to render the page. Check the module logs.'
+                . '</div>';
+        }
+
         return $this->smarty->fetch($this->renderFilename);
     }
 }

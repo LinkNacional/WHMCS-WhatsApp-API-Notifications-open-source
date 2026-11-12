@@ -1,3 +1,8 @@
+# 4.9.1 - 12/11/26
+
+- Corrige o erro de render apos redirecionamento no editor de notificacao (selecao de idioma, primeira template e 404).
+- Adiciona exit deterministico apos redirects, guard no AdminUIRenderer e fallback seguro no View::render.
+
 # 4.9.0 - 11/11/26
 
 - Handoff de atendimento configuravel no Telegram: botao em notificacoes e auto-resposta independentes, destinos WhatsApp ou bot de suporte, textos globais e desabilitado por padrao.
